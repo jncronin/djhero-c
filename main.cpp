@@ -5,6 +5,8 @@
 #include <lv_drivers/indev/mouse.h>
 #include <lv_drivers/indev/keyboard.h>
 #include <SDL2/SDL.h>
+#include <stdio.h>
+#include <gd.h>
 
 #if LV_MEM_CUSTOM == 0
 #error Please set lv_conf.h LV_MEM_CUSTOM to 1
@@ -24,9 +26,15 @@ const char root[] = "/mnt/c/Windows/CSC/v2.0.6/namespace/winchester/john/Music/"
 
 static int tick_thread(void *data);
 static void populate_list(lv_obj_t **l, path p);
+static const void *load_image(const char *fname);
 
 // A screen containing only a list for scrolling up/down
 lv_obj_t *scr_list;
+
+// Now playing screen
+lv_obj_t *scr_play;
+lv_obj_t *play_img;
+lv_obj_t *play_lab;
 
 // The list itself
 lv_obj_t *list = NULL;
@@ -71,14 +79,54 @@ static std::vector<struct dent*> enum_dir(path dir)
 	return v;
 }
 
+static const char * find_largest_jpg(path cp)
+{
+	uintmax_t max_fs = 0;
+	std::string *cmax = NULL;
+
+	for(auto x : directory_iterator(cp))
+	{
+		auto p = x.path();
+		if(is_regular_file(p) && (p.extension() == ".jpg" || p.extension() == ".jpeg"))
+		{
+			auto csize = file_size(p);
+			if(csize > max_fs)
+			{
+				max_fs = csize;
+				if(cmax)
+					delete cmax;
+				cmax = new std::string(p.c_str());
+			}
+		}
+	}
+
+	return cmax->c_str();
+}
+
 static lv_res_t list_cb(lv_obj_t *btn)
 {
 	auto dent = ((struct dent*)btn->free_ptr);
 	if(is_regular_file(dent->p))
 	{
+		// Find the largest *.jpg file in the folder
+		auto img_file = find_largest_jpg(dent->p.parent_path());
+		if(img_file == NULL)
+		{
+			lv_img_set_src(play_img, SYMBOL_AUDIO);
+		}
+		else
+		{
+			lv_img_set_src(play_img, load_image(img_file));
+		}
+
+		//lv_img_set_src(play_img, load_image("Folder.jpg"));
+		lv_label_set_text(play_lab, dent->p.filename().c_str());
+		
+		lv_scr_load(scr_play);
+		
 		cout << "Pressed " << ((struct dent*)btn->free_ptr)->p << endl;
 	
-		exit(0);
+		//exit(0);
 	}
 	else
 	{
@@ -153,8 +201,16 @@ int main()
 
 	// Initialise screen
 	scr_list = lv_obj_create(NULL, NULL);
-
 	populate_list(&list, p);
+
+	// Now playing screen
+	scr_play = lv_obj_create(NULL, NULL);
+	play_img = lv_img_create(scr_play, NULL);
+	play_lab = lv_label_create(scr_play, NULL);
+
+	lv_obj_set_x(play_img, 40);
+	lv_obj_set_style(play_lab, &lv_style_pretty);
+	lv_obj_refresh_style(play_lab);
 
 	lv_scr_load(scr_list);
 
@@ -165,6 +221,41 @@ int main()
 	}
 
 	return 0;
+}
+
+static const void *load_image(const char *fname)
+{
+	// Test image load
+	auto f = fopen(fname, "r");
+	auto img = gdImageCreateFromJpegEx(f, 1);
+	fclose(f);
+
+	gdImageSetInterpolationMethod(img, GD_BILINEAR_FIXED);
+	auto scaled = gdImageScale(img, 240, 240);
+
+	gdImageDestroy(img);
+
+	auto imgbuf = new int[240 * 240 * 4];
+	int ptr = 0;
+	for(int y = 0; y < 240; y++)
+	{
+		for(int x = 0; x < 240; x++)
+		{
+			imgbuf[ptr++] = scaled->tpixels[y][x];
+		}
+	}
+
+	gdImageDestroy(scaled);
+
+	auto lvimg = new lv_img_t();
+	memset(lvimg, 0, sizeof(lv_img_t));
+	lvimg->header.format = LV_IMG_FORMAT_INTERNAL_RAW;
+	lvimg->header.w = 240;
+	lvimg->header.h = 240;
+	lvimg->header.alpha_byte = 0;
+	lvimg->pixel_map = (const uint8_t *)imgbuf;
+
+	return (const void *)lvimg;
 }
 
 static int tick_thread(void *data)
