@@ -5,6 +5,10 @@
 #include <lv_drivers/indev/mouse.h>
 #include <SDL2/SDL.h>
 
+#if LV_MEM_CUSTOM == 0
+#error Please set lv_conf.h LV_MEM_CUSTOM to 1
+#endif
+
 using namespace boost::filesystem;
 using std::cout;
 using std::endl;
@@ -18,6 +22,16 @@ struct dent
 const char root[] = "/mnt/c/Windows/CSC/v2.0.6/namespace/winchester/john/Music/";
 
 static int tick_thread(void *data);
+
+
+// A screen containing only a list for scrolling up/down
+lv_obj_t *scr_list;
+
+// The list itself
+lv_obj_t *list;
+
+// Current directory listing
+std::vector<struct dent*> dlist;
 
 static std::vector<struct dent*> enum_dir(path dir)
 {
@@ -44,7 +58,19 @@ static std::vector<struct dent*> enum_dir(path dir)
 	}
 
 	return v;
+}
 
+void populate_list(lv_obj_t **l, path p)
+{
+	*l = lv_list_create(scr_list, NULL);
+
+	dlist = enum_dir(p);
+
+	for(auto x : dlist)
+	{
+		const char *cs = x->name.c_str();
+		lv_list_add(*l, NULL, cs, NULL);
+	}
 }
 
 int main()
@@ -68,7 +94,15 @@ int main()
 	
 	SDL_CreateThread(tick_thread, "tick", NULL);
 
+	
 	path p(root);
+
+	// Initialise screen
+	scr_list = lv_obj_create(NULL, NULL);
+
+	populate_list(&list, p);
+
+	lv_scr_load(scr_list);
 
 	while(true)
 	{
