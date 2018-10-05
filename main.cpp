@@ -3,6 +3,7 @@
 #include <lvgl/lvgl.h>
 #include <lv_drivers/display/monitor.h>
 #include <lv_drivers/indev/mouse.h>
+#include <lv_drivers/indev/keyboard.h>
 #include <SDL2/SDL.h>
 
 #if LV_MEM_CUSTOM == 0
@@ -28,7 +29,10 @@ static void populate_list(lv_obj_t **l, path p);
 lv_obj_t *scr_list;
 
 // The list itself
-lv_obj_t *list;
+lv_obj_t *list = NULL;
+
+// A group for keyboard navigation
+lv_group_t *list_grp;
 
 // Current directory listing
 std::vector<struct dent*> dlist;
@@ -40,7 +44,7 @@ static std::vector<struct dent*> enum_dir(path dir)
 	if(!equivalent(dir, path(root)))
 	{
 		auto prev_dent = new dent();
-		prev_dent->name = "..";
+		prev_dent->name = SYMBOL_DIRECTORY"  ..";
 		prev_dent->p = dir.parent_path();
 		v.push_back(prev_dent);
 	}
@@ -51,7 +55,11 @@ static std::vector<struct dent*> enum_dir(path dir)
 		if(is_directory(p) || is_regular_file(p) && p.extension() == ".mp3")
 		{
 			auto cdent = new dent();
-			cdent->name = p.filename().native();
+
+			if(is_directory(p))
+				cdent->name = std::string(SYMBOL_DIRECTORY"  ") + p.filename().native();
+			else
+				cdent->name = std::string(SYMBOL_AUDIO"  ") + p.filename().native();
 			cdent->p = p;
 			v.push_back(cdent);
 		}
@@ -65,7 +73,7 @@ static lv_res_t list_cb(lv_obj_t *btn)
 	auto dent = ((struct dent*)btn->free_ptr);
 	if(is_regular_file(dent->p))
 	{
-		cout << "Pressed " << ((struct dent*)btn->free_ptr)->name << endl;
+		cout << "Pressed " << ((struct dent*)btn->free_ptr)->p << endl;
 	
 		exit(0);
 	}
@@ -80,11 +88,20 @@ static lv_res_t list_cb(lv_obj_t *btn)
 
 static void populate_list(lv_obj_t **l, path p)
 {
+	if(*l)
+	{
+	//	lv_group_remove_obj(*l);
+	}
+
 	*l = lv_list_create(scr_list, NULL);
+
+	//lv_group_add_obj(list_grp, *l);
 
 	lv_obj_set_pos(*l, 0, 0);
 	lv_obj_set_size(*l, 320, 240);
 
+	for(auto x : dlist)
+		delete x;
 	dlist = enum_dir(p);
 
 	for(auto x : dlist)
@@ -116,6 +133,16 @@ int main()
 	indev_drv.read = mouse_read;
 	lv_indev_drv_register(&indev_drv);
 	
+	list_grp = lv_group_create();
+
+	keyboard_init();
+	lv_indev_drv_t kb_drv;
+	lv_indev_drv_init(&kb_drv);
+	kb_drv.type = LV_INDEV_TYPE_KEYPAD;
+	kb_drv.read = keyboard_read;
+	auto kbd = lv_indev_drv_register(&kb_drv);
+	lv_indev_set_group(kbd, list_grp);
+
 	SDL_CreateThread(tick_thread, "tick", NULL);
 
 	
