@@ -22,7 +22,7 @@ struct dent
 const char root[] = "/mnt/c/Windows/CSC/v2.0.6/namespace/winchester/john/Music/";
 
 static int tick_thread(void *data);
-
+static void populate_list(lv_obj_t **l, path p);
 
 // A screen containing only a list for scrolling up/down
 lv_obj_t *scr_list;
@@ -60,16 +60,39 @@ static std::vector<struct dent*> enum_dir(path dir)
 	return v;
 }
 
-void populate_list(lv_obj_t **l, path p)
+static lv_res_t list_cb(lv_obj_t *btn)
+{
+	auto dent = ((struct dent*)btn->free_ptr);
+	if(is_regular_file(dent->p))
+	{
+		cout << "Pressed " << ((struct dent*)btn->free_ptr)->name << endl;
+	
+		exit(0);
+	}
+	else
+	{
+		lv_obj_del(list);
+		populate_list(&list, dent->p);
+	}
+
+	return LV_RES_OK;
+}
+
+static void populate_list(lv_obj_t **l, path p)
 {
 	*l = lv_list_create(scr_list, NULL);
+
+	lv_obj_set_pos(*l, 0, 0);
+	lv_obj_set_size(*l, 320, 240);
 
 	dlist = enum_dir(p);
 
 	for(auto x : dlist)
 	{
 		const char *cs = x->name.c_str();
-		lv_list_add(*l, NULL, cs, NULL);
+		auto btn = lv_list_add(*l, NULL, cs, list_cb);
+		btn->free_ptr = x;
+		lv_obj_set_height(btn, 240/8);
 	}
 }
 
@@ -91,6 +114,7 @@ int main()
 	lv_indev_drv_init(&indev_drv);
 	indev_drv.type = LV_INDEV_TYPE_POINTER;
 	indev_drv.read = mouse_read;
+	lv_indev_drv_register(&indev_drv);
 	
 	SDL_CreateThread(tick_thread, "tick", NULL);
 
@@ -108,26 +132,6 @@ int main()
 	{
 		lv_task_handler();
 		usleep(10000);
-	}
-
-	while(true)
-	{
-		auto v = enum_dir(p);
-		int i = 0;
-		for(auto x : v)
-		{
-			cout << i++ << ": " << x->name << endl;
-		}
-
-		scanf("%i", &i);
-
-		p = v[i]->p;
-
-		if(is_regular_file(p))
-		{
-			cout << "chose : " << p << endl;
-			return 0;
-		}
 	}
 
 	return 0;
