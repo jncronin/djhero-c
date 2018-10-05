@@ -32,7 +32,10 @@ lv_obj_t *scr_list;
 lv_obj_t *list = NULL;
 
 // A group for keyboard navigation
-lv_group_t *list_grp;
+lv_group_t *list_grp = NULL;
+
+// Keyboard driver
+lv_indev_t *kbd;
 
 // Current directory listing
 std::vector<struct dent*> dlist;
@@ -79,7 +82,6 @@ static lv_res_t list_cb(lv_obj_t *btn)
 	}
 	else
 	{
-		lv_obj_del(list);
 		populate_list(&list, dent->p);
 	}
 
@@ -88,14 +90,15 @@ static lv_res_t list_cb(lv_obj_t *btn)
 
 static void populate_list(lv_obj_t **l, path p)
 {
-	if(*l)
+	if(list_grp)
 	{
-	//	lv_group_remove_obj(*l);
+		lv_group_del(list_grp);
+		lv_obj_del(*l);
 	}
+	list_grp = lv_group_create();
+	lv_indev_set_group(kbd, list_grp);
 
 	*l = lv_list_create(scr_list, NULL);
-
-	//lv_group_add_obj(list_grp, *l);
 
 	lv_obj_set_pos(*l, 0, 0);
 	lv_obj_set_size(*l, 320, 240);
@@ -110,6 +113,7 @@ static void populate_list(lv_obj_t **l, path p)
 		auto btn = lv_list_add(*l, NULL, cs, list_cb);
 		btn->free_ptr = x;
 		lv_obj_set_height(btn, 240/8);
+		lv_group_add_obj(list_grp, btn);
 	}
 }
 
@@ -133,15 +137,12 @@ int main()
 	indev_drv.read = mouse_read;
 	lv_indev_drv_register(&indev_drv);
 	
-	list_grp = lv_group_create();
-
 	keyboard_init();
 	lv_indev_drv_t kb_drv;
 	lv_indev_drv_init(&kb_drv);
 	kb_drv.type = LV_INDEV_TYPE_KEYPAD;
 	kb_drv.read = keyboard_read;
-	auto kbd = lv_indev_drv_register(&kb_drv);
-	lv_indev_set_group(kbd, list_grp);
+	kbd = lv_indev_drv_register(&kb_drv);
 
 	SDL_CreateThread(tick_thread, "tick", NULL);
 
