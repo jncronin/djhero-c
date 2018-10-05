@@ -113,8 +113,10 @@ static void populate_list(lv_obj_t **l, path p)
 		auto btn = lv_list_add(*l, NULL, cs, list_cb);
 		btn->free_ptr = x;
 		lv_obj_set_height(btn, 240/8);
-		lv_group_add_obj(list_grp, btn);
+	//	lv_group_add_obj(list_grp, btn);
 	}
+
+	lv_group_add_obj(list_grp, *l);
 }
 
 int main()
