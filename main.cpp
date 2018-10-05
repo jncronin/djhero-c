@@ -100,7 +100,10 @@ static const char * find_largest_jpg(path cp)
 		}
 	}
 
-	return cmax->c_str();
+	if(cmax)
+		return cmax->c_str();
+	else
+		return NULL;
 }
 
 static lv_res_t list_cb(lv_obj_t *btn)
@@ -208,6 +211,8 @@ int main()
 	play_img = lv_img_create(scr_play, NULL);
 	play_lab = lv_label_create(scr_play, NULL);
 
+	lv_img_set_auto_size(play_img, false);
+	lv_obj_set_size(play_img, 240, 240);
 	lv_obj_set_x(play_img, 40);
 	lv_obj_set_style(play_lab, &lv_style_pretty);
 	lv_obj_refresh_style(play_lab);
