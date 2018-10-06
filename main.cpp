@@ -1,12 +1,15 @@
 #include <boost/filesystem.hpp>
 #include <iostream>
 #include <lvgl/lvgl.h>
-#include <lv_drivers/display/monitor.h>
-#include <lv_drivers/indev/mouse.h>
-#include <lv_drivers/indev/keyboard.h>
+#include <lv_drivers/display/fbdev.h>
+#include <libevdev-1.0/libevdev/libevdev.h>
 #include <SDL2/SDL.h>
 #include <stdio.h>
 #include <gd.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #if LV_MEM_CUSTOM == 0
 #error Please set lv_conf.h LV_MEM_CUSTOM to 1
@@ -22,11 +25,11 @@ struct dent
 	path p;
 };
 
-const char root[] = "/mnt/c/Windows/CSC/v2.0.6/namespace/winchester/john/Music/";
+const char root[] = "/home/jncronin/Music";
 
-static int tick_thread(void *data);
 static void populate_list(lv_obj_t **l, path p);
 static const void *load_image(const char *fname);
+static bool kb_read(lv_indev_data_t *data);
 
 // A screen containing only a list for scrolling up/down
 lv_obj_t *scr_list;
@@ -47,6 +50,34 @@ lv_indev_t *kbd;
 
 // Current directory listing
 std::vector<struct dent*> dlist;
+
+// Data for evdev keyboard driver
+static uint32_t kb_last_key;
+static lv_indev_state_t kb_state;
+static struct libevdev *dev = NULL;
+
+static uint32_t keycode_to_ascii(uint32_t ie_key)
+{
+	switch(ie_key)
+	{
+		case KEY_RIGHT:
+			return LV_GROUP_KEY_RIGHT;
+		case KEY_LEFT:
+			return LV_GROUP_KEY_LEFT;
+		case KEY_UP:
+			return LV_GROUP_KEY_UP;
+		case KEY_DOWN:
+			return LV_GROUP_KEY_DOWN;
+		case KEY_ESC:
+			return LV_GROUP_KEY_ESC;
+		case KEY_ENTER:
+			return LV_GROUP_KEY_ENTER;
+		case KEY_BACKSPACE:
+			return '\b';
+		default:
+			return ie_key;
+	}
+}
 
 static std::vector<struct dent*> enum_dir(path dir)
 {
@@ -172,33 +203,30 @@ static void populate_list(lv_obj_t **l, path p)
 
 int main()
 {
+	int fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
+	if(fd == -1)
+	{
+		printf("unable to open device\n");
+		return -1;
+	}
+
+	int rc = libevdev_new_from_fd(fd, &dev);
 
 	lv_init();
 
-	monitor_init();
+	// Framebuffer
+	fbdev_init();
 	lv_disp_drv_t disp_drv;
 	lv_disp_drv_init(&disp_drv);
-	disp_drv.disp_flush = monitor_flush;
-	disp_drv.disp_fill = monitor_fill;
-	disp_drv.disp_map = monitor_map;
+	disp_drv.disp_flush = fbdev_flush;
 	lv_disp_drv_register(&disp_drv);
-	
-	mouse_init();
-	lv_indev_drv_t indev_drv;
-	lv_indev_drv_init(&indev_drv);
-	indev_drv.type = LV_INDEV_TYPE_POINTER;
-	indev_drv.read = mouse_read;
-	lv_indev_drv_register(&indev_drv);
-	
-	keyboard_init();
-	lv_indev_drv_t kb_drv;
-	lv_indev_drv_init(&kb_drv);
-	kb_drv.type = LV_INDEV_TYPE_KEYPAD;
-	kb_drv.read = keyboard_read;
-	kbd = lv_indev_drv_register(&kb_drv);
 
-	SDL_CreateThread(tick_thread, "tick", NULL);
-
+	// Keyboard via evdev interface
+	lv_indev_drv_t ipt;
+	lv_indev_drv_init(&ipt);
+	ipt.type = LV_INDEV_TYPE_KEYPAD;
+	ipt.read = kb_read;
+	kbd = lv_indev_drv_register(&ipt);
 	
 	path p(root);
 
@@ -221,11 +249,39 @@ int main()
 
 	while(true)
 	{
+		struct input_event ev;
+		rc = libevdev_next_event(dev, LIBEVDEV_READ_FLAG_NORMAL, &ev);
+
+		if(rc == LIBEVDEV_READ_STATUS_SUCCESS)
+		{
+			if(ev.type == EV_KEY)
+			{
+				if(ev.value == 1)
+				{
+					kb_last_key = ev.code;
+					kb_state = LV_INDEV_STATE_PR;
+				}
+				else if(ev.value == 0)
+				{
+					kb_state = LV_INDEV_STATE_REL;
+				}
+			}
+		}
+			
 		lv_task_handler();
-		usleep(10000);
+		usleep(5000);
+		lv_tick_inc(5);
 	}
 
 	return 0;
+}
+
+static bool kb_read(lv_indev_data_t *data)
+{
+	data->state = kb_state;
+	data->key = keycode_to_ascii(kb_last_key);
+
+	return false;
 }
 
 static const void *load_image(const char *fname)
@@ -240,13 +296,20 @@ static const void *load_image(const char *fname)
 
 	gdImageDestroy(img);
 
-	auto imgbuf = new int[240 * 240 * 4];
+	auto imgbuf = new int16_t[240 * 240];
 	int ptr = 0;
 	for(int y = 0; y < 240; y++)
 	{
 		for(int x = 0; x < 240; x++)
 		{
-			imgbuf[ptr++] = scaled->tpixels[y][x];
+			// convert to rgb565
+			int rgb = scaled->tpixels[y][x];
+
+			int b = rgb & 0xff;
+			int g = (rgb >> 8) & 0xff;
+			int r = (rgb >> 16) & 0xff;
+
+			imgbuf[ptr++] = (int16_t)((b >> 3) | ((g >> 2) << 5) | ((r >> 3) << 11));
 		}
 	}
 
@@ -261,18 +324,5 @@ static const void *load_image(const char *fname)
 	lvimg->pixel_map = (const uint8_t *)imgbuf;
 
 	return (const void *)lvimg;
-}
-
-static int tick_thread(void *data)
-{
-	(void)data;
-
-	while(true)
-	{
-		SDL_Delay(5);
-		lv_tick_inc(5);
-	}
-
-	return 0;
 }
 

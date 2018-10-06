@@ -5,8 +5,8 @@ all: djhero
 
 
 %.o: %.cpp
-	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) -g -I ../pc_simulator -o $@ $<
+	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) -g -I ../lv -o $@ $<
 
 djhero: $(OBJFILES)
-	$(CXX) -o $@ $(LDFLAGS) $(OBJFILES) -lm -llvgl -lSDL2 -lboost_filesystem -lboost_system -L../pc_simulator -lgd
+	$(CXX) -o $@ $(LDFLAGS) $(OBJFILES) -lm -llvgl -lboost_filesystem -lboost_system -L../lv -lgd -levdev
 
