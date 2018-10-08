@@ -5,10 +5,25 @@
 
 extern bool game_playing;
 
+static lv_obj_t *load_scr = NULL;
+static lv_obj_t *load_text = NULL;
+
 struct gamedent : dent
 {
     std::string cmdline;
 };
+
+static lv_obj_t *get_load_scr(std::string pretty)
+{
+    if(!load_scr)
+    {
+        load_scr = lv_obj_create(NULL, NULL);
+        load_text = lv_label_create(load_scr, NULL);
+    }
+    
+    lv_label_set_text(load_text, ("Loading " + pretty + "...").c_str());
+    return load_scr;
+}
 
 static bool gamesort(struct dent *a, struct dent *b)
 {
@@ -25,12 +40,31 @@ static void game_cb(struct dent *dent, struct dent *parent)
 
     auto gd = (struct gamedent *)dent;
     std::cout << "game_cb: " << gd->cmdline << std::endl;
+    auto old_scr = lv_scr_act();
+    auto new_scr = get_load_scr(gd->name);
+    lv_scr_load(new_scr);
+    lv_task_handler();
+    lv_tick_inc(5);
     game_playing = true;
     system(gd->cmdline.c_str());
     game_playing = false;
     std::cout << "game done";
+    lv_scr_load(old_scr);
 }
 
+static struct gamedent *mame(std::string pretty, std::string mamename)
+{
+    auto p = new struct gamedent();
+    p->name = pretty;
+    p->cmdline = "FRAMEBUFFER=/dev/fb1 /usr/local/bin/advmame " + mamename;
+    p->cb = game_cb;
+    return p;
+}
+
+static struct gamedent *mame(std::string mamename)
+{
+    return mame(mamename, mamename);
+}
 
 // Currently we hard-code in the games known to work
 std::vector<struct dent*> game_list()
@@ -44,33 +78,16 @@ std::vector<struct dent*> game_list()
     prev_dent->is_parent = true;
     v.push_back(prev_dent);
 
-    struct gamedent *p;
-
-    p = new struct gamedent();
-    p->name = "1941";
-    p->cmdline = "FRAMEBUFFER=/dev/fb1 /usr/local/bin/advmame 1941";
-    p->cb = game_cb;
-    v.push_back(p);
-
-    p = new struct gamedent();
-    p->name = "1942";
-    p->cmdline = "FRAMEBUFFER=/dev/fb1 /usr/local/bin/advmame 1942";
-    p->cb = game_cb;
-    v.push_back(p);
-
-    p = new struct gamedent();
-    p->name = "Frogger";
-    p->cmdline = "FRAMEBUFFER=/dev/fb1 /usr/local/bin/advmame frogger";
-    p->cb = game_cb;
-    v.push_back(p);
-
-    p = new struct gamedent();
-    p->name = "Pac-Man";
-    p->cmdline = "FRAMEBUFFER=/dev/fb1 /usr/local/bin/advmame pacman";
-    p->cb = game_cb;
-    v.push_back(p);
-
-
+    v.push_back(mame("1941"));
+    v.push_back(mame("1942"));
+    v.push_back(mame("Pac-Man", "pacman"));
+    v.push_back(mame("Ms. Pac-Man", "mspacman"));
+    v.push_back(mame("Frogger", "frogger"));
+    v.push_back(mame("Joust", "joust"));
+    v.push_back(mame("Arkanoid", "arkanoid"));
+    v.push_back(mame("Galaga", "galaga"));
+    v.push_back(mame("Galaga '88", "galaga88"));
+    v.push_back(mame("Balloon Fight", "balonfgt"));
 
     std::sort(v.begin(), v.end(), gamesort);
     return v;
