@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 
 #include "dirlist.h"
+#include "menuscreen.h"
 
 #if LV_MEM_CUSTOM == 0
 #error Please set lv_conf.h LV_MEM_CUSTOM to 1
@@ -25,8 +26,11 @@ static void populate_list(lv_obj_t **l, path p);
 static const void *load_image(const char *fname);
 static bool kb_read(lv_indev_data_t *data);
 
+// Is a game currently playing?  Used to ignore input
+bool game_playing = false;
+
 // A screen containing only a list for scrolling up/down
-lv_obj_t *scr_list;
+static lv_obj_t *scr_list;
 
 // Now playing screen
 lv_obj_t *scr_play;
@@ -127,41 +131,10 @@ static lv_res_t list_cb(lv_obj_t *btn)
 	}
 	else
 	{
-		populate_list(&list, dent->p);
+		//populate_list(&list, dent->p);
 	}
 
 	return LV_RES_OK;
-}
-
-static void populate_list(lv_obj_t **l, path p)
-{
-	if(list_grp)
-	{
-		lv_group_del(list_grp);
-		lv_obj_del(*l);
-	}
-	list_grp = lv_group_create();
-	lv_indev_set_group(kbd, list_grp);
-
-	*l = lv_list_create(scr_list, NULL);
-
-	lv_obj_set_pos(*l, 0, 0);
-	lv_obj_set_size(*l, 320, 240);
-
-	for(auto x : dlist)
-		delete x;
-	dlist = enum_dir(p);
-
-	for(auto x : dlist)
-	{
-		const char *cs = x->name.c_str();
-		auto btn = lv_list_add(*l, NULL, cs, list_cb);
-		btn->free_ptr = x;
-		lv_obj_set_height(btn, 240/8);
-	//	lv_group_add_obj(list_grp, btn);
-	}
-
-	lv_group_add_obj(list_grp, *l);
 }
 
 int main()
@@ -192,8 +165,7 @@ int main()
 	kbd = lv_indev_drv_register(&ipt);
 	
 	// Initialise screen
-	scr_list = lv_obj_create(NULL, NULL);
-	populate_list(&list, p);
+	scr_list = menuscreen_create();
 
 	// Now playing screen
 	scr_play = lv_obj_create(NULL, NULL);
@@ -210,28 +182,35 @@ int main()
 
 	while(true)
 	{
-		struct input_event ev;
-		rc = libevdev_next_event(dev, LIBEVDEV_READ_FLAG_NORMAL, &ev);
-
-		if(rc == LIBEVDEV_READ_STATUS_SUCCESS)
+		if(game_playing)
 		{
-			if(ev.type == EV_KEY)
+			usleep(100000);
+		}
+		else
+		{
+			struct input_event ev;
+			rc = libevdev_next_event(dev, LIBEVDEV_READ_FLAG_NORMAL, &ev);
+
+			if(rc == LIBEVDEV_READ_STATUS_SUCCESS)
 			{
-				if(ev.value == 1)
+				if(ev.type == EV_KEY)
 				{
-					kb_last_key = ev.code;
-					kb_state = LV_INDEV_STATE_PR;
-				}
-				else if(ev.value == 0)
-				{
-					kb_state = LV_INDEV_STATE_REL;
+					if(ev.value == 1)
+					{
+						kb_last_key = ev.code;
+						kb_state = LV_INDEV_STATE_PR;
+					}
+					else if(ev.value == 0)
+					{
+						kb_state = LV_INDEV_STATE_REL;
+					}
 				}
 			}
+				
+			lv_task_handler();
+			usleep(5000);
+			lv_tick_inc(5);
 		}
-			
-		lv_task_handler();
-		usleep(5000);
-		lv_tick_inc(5);
 	}
 
 	return 0;

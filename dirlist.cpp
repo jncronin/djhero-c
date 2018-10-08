@@ -1,5 +1,6 @@
 #include <lvgl/lvgl.h>
 #include "dirlist.h"
+#include "menuscreen.h"
 
 static std::string root = "/home/jncronin/Music";
 
@@ -38,14 +39,15 @@ std::vector<struct dent*> enum_dir(path dir)
         }
     }
 
-	if(!equivalent(dir, path(root)))
-	{
-		auto prev_dent = new dent();
-		prev_dent->name = SYMBOL_DIRECTORY"  ..";
-		prev_dent->p = dir.parent_path();
-		prev_dent->is_parent = true;
-		v.push_back(prev_dent);
-	}
+    auto prev_dent = new dent();
+    prev_dent->name = SYMBOL_DIRECTORY"  ..";
+    prev_dent->p = dir.parent_path();
+    prev_dent->is_parent = true;
+    if(!equivalent(dir, path(root)))
+        prev_dent->cb = file_cb;
+    else
+        prev_dent->cb = root_cb;
+    v.push_back(prev_dent);
 
 	for(auto x : directory_iterator(dir))
 	{
@@ -55,8 +57,11 @@ std::vector<struct dent*> enum_dir(path dir)
 			auto cdent = new dent();
 
 			if(is_directory(p))
+            {
 				cdent->name = std::string(SYMBOL_DIRECTORY"  ") + p.filename().native();
-			else
+                cdent->cb = file_cb;
+            }
+            else
 				cdent->name = std::string(SYMBOL_AUDIO"  ") + p.filename().native();
 			cdent->p = p;
 			cdent->is_parent = false;

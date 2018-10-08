@@ -10,6 +10,8 @@ struct dent
 	std::string name;
 	path p;
 	bool is_parent;
+
+     void (*cb)(struct dent *dent, struct dent *parent);
 };
 
 std::string get_root();
