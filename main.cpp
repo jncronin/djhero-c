@@ -11,6 +11,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "dirlist.h"
+
 #if LV_MEM_CUSTOM == 0
 #error Please set lv_conf.h LV_MEM_CUSTOM to 1
 #endif
@@ -18,14 +20,6 @@
 using namespace boost::filesystem;
 using std::cout;
 using std::endl;
-
-struct dent
-{
-	std::string name;
-	path p;
-};
-
-const char root[] = "/home/jncronin/Music";
 
 static void populate_list(lv_obj_t **l, path p);
 static const void *load_image(const char *fname);
@@ -77,37 +71,6 @@ static uint32_t keycode_to_ascii(uint32_t ie_key)
 		default:
 			return ie_key;
 	}
-}
-
-static std::vector<struct dent*> enum_dir(path dir)
-{
-	std::vector<struct dent*> v;
-
-	if(!equivalent(dir, path(root)))
-	{
-		auto prev_dent = new dent();
-		prev_dent->name = SYMBOL_DIRECTORY"  ..";
-		prev_dent->p = dir.parent_path();
-		v.push_back(prev_dent);
-	}
-
-	for(auto x : directory_iterator(dir))
-	{
-		auto p = x.path();
-		if(is_directory(p) || is_regular_file(p) && p.extension() == ".mp3")
-		{
-			auto cdent = new dent();
-
-			if(is_directory(p))
-				cdent->name = std::string(SYMBOL_DIRECTORY"  ") + p.filename().native();
-			else
-				cdent->name = std::string(SYMBOL_AUDIO"  ") + p.filename().native();
-			cdent->p = p;
-			v.push_back(cdent);
-		}
-	}
-
-	return v;
 }
 
 static const char * find_largest_jpg(path cp)
@@ -228,8 +191,6 @@ int main()
 	ipt.read = kb_read;
 	kbd = lv_indev_drv_register(&ipt);
 	
-	path p(root);
-
 	// Initialise screen
 	scr_list = lv_obj_create(NULL, NULL);
 	populate_list(&list, p);
