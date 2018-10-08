@@ -1,6 +1,7 @@
 #include <lvgl/lvgl.h>
 #include <iostream>
 #include "menuscreen.h"
+#include "music.h"
 
 using namespace boost::filesystem;
 
@@ -30,7 +31,16 @@ lv_obj_t *menuscreen_create()
     return scr_list;
 }
 
-void root_cb(struct dent *dent, struct dent *parent)
+void music_cb(struct dent *dent, struct dent *parent)
+{
+    // TODO: handle screen switch
+    std::cout << "music_cb " << dent->p << std::endl;
+    play_music(dent->p.native());
+
+}
+
+void root_cb(
+    struct dent *dent, struct dent *parent)
 {
     (void)parent;
     (void)dent;

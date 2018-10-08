@@ -9,5 +9,6 @@ void populate_list(lv_obj_t **l, struct dent* cdent,
     std::vector<struct dent *>entries);
 void file_cb(struct dent *dent, struct dent *parent);
 void root_cb(struct dent *dent, struct dent *parent);
+void music_cb(struct dent *dent, struct dent *parent);
 
 #endif

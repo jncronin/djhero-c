@@ -13,6 +13,7 @@
 
 #include "dirlist.h"
 #include "menuscreen.h"
+#include "music.h"
 
 #if LV_MEM_CUSTOM == 0
 #error Please set lv_conf.h LV_MEM_CUSTOM to 1
@@ -28,6 +29,9 @@ static bool kb_read(lv_indev_data_t *data);
 
 // Is a game currently playing?  Used to ignore input
 bool game_playing = false;
+
+// Is music playing?
+bool music_playing = false;
 
 // A screen containing only a list for scrolling up/down
 static lv_obj_t *scr_list;
@@ -137,7 +141,7 @@ static lv_res_t list_cb(lv_obj_t *btn)
 	return LV_RES_OK;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
 	int fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
 	if(fd == -1)
@@ -149,10 +153,14 @@ int main()
 	int rc = libevdev_new_from_fd(fd, &dev);
 
 	lv_init();
+	music_init(argc, argv
+	);
 
-	// Framebuffer
+	/
+	/ Framebuffer
 	fbdev_init();
-	lv_disp_drv_t disp_drv;
+	lv_di
+	sp_drv_t disp_drv;
 	lv_disp_drv_init(&disp_drv);
 	disp_drv.disp_flush = fbdev_flush;
 	lv_disp_drv_register(&disp_drv);
@@ -205,6 +213,12 @@ int main()
 						kb_state = LV_INDEV_STATE_REL;
 					}
 				}
+			}
+
+			speed_ctrl_loop();
+			if(music_playing)
+			{
+				music_loop();
 			}
 				
 			lv_task_handler();

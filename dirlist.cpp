@@ -62,8 +62,11 @@ std::vector<struct dent*> enum_dir(path dir)
                 cdent->cb = file_cb;
             }
             else
+            {
 				cdent->name = std::string(SYMBOL_AUDIO"  ") + p.filename().native();
-			cdent->p = p;
+                cdent->cb = music_cb;
+            }
+            cdent->p = p;
 			cdent->is_parent = false;
 			v.push_back(cdent);
 		}
