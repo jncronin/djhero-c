@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <id3tag.h>
 
 #include "music.h"
 #include "image.h"
@@ -40,8 +41,8 @@ void music_init(int argc, char *argv[])
 
     // Build the screen objects
     scr_music = lv_obj_create(NULL, NULL);
-    music_label = lv_label_create(scr_music, NULL);
     music_image = lv_img_create(scr_music, NULL);
+    music_label = lv_label_create(scr_music, NULL);
     lv_obj_set_size(music_image, 240, 240);
     lv_obj_set_x(music_image, 40);
     lv_obj_set_style(music_label, &lv_style_pretty);
@@ -78,7 +79,6 @@ void speed_ctrl_loop()
             }
         }
     }
-
 }
 
 void music_loop()
@@ -142,8 +142,62 @@ void play_music_list(std::vector<std::string> fnames,
     play_music(fnames[0]);
 }
 
+static char *get_string(const char *tag_name, struct id3_tag *t)
+{
+	for(int i = 0; i < t->nframes; i++)
+	{
+		struct id3_frame *cf = t->frames[i];
+
+		if(!strncmp(tag_name, cf->id, 5))
+		{
+			// we have found the tag, find a stringlist
+			for(int j = 0; j < cf->nfields; j++)
+			{
+				union id3_field *f = &cf->fields[j];
+				if(f->type == ID3_FIELD_TYPE_STRINGLIST)
+				{
+					unsigned int slen = id3_field_getnstrings(f);
+
+					for(unsigned int k = 0; k < slen; k++)
+					{
+						const id3_ucs4_t *cs = id3_field_getstrings(f, k);
+
+						char *ret = (char *)id3_ucs4_utf8duplicate(cs);
+
+						return ret;
+					}
+				}
+			}
+		}
+	}
+	return NULL;
+}
+
+static void populate_id3(std::string fname)
+{
+    struct id3_file *id3 = id3_file_open(fname.c_str(), ID3_FILE_MODE_READONLY);
+    struct id3_tag *t = id3_file_tag(id3);
+
+    char *tit = get_string("TIT2", t);
+    char *alb = get_string("TALB", t);
+    char *art = get_string("TPE1", t);
+
+    std::string stit = tit ? std::string(tit) : "Unknown Title";
+    std::string salb = alb ? std::string(alb) : "Unknown Album";
+    std::string sart = art ? std::string(art) : "Unknown Artist";
+
+    std::string ret = stit + "\n" + salb + "\n" + sart;
+    if(tit) free(tit);
+    if(alb) free(alb);
+    if(art) free(art);
+   
+    lv_label_set_text(music_label, ret.c_str());
+}
+
 void play_music(std::string fname)
 {
+    populate_id3(fname);
+
     if(pipeline == NULL)
     {
         // instantiate a new pipeline here once only
