@@ -182,6 +182,8 @@ static void populate_id3(std::string fname)
     char *alb = get_string("TALB", t);
     char *art = get_string("TPE1", t);
 
+    id3_file_close(id3);
+    
     std::string stit = tit ? std::string(tit) : "Unknown Title";
     std::string salb = alb ? std::string(alb) : "Unknown Album";
     std::string sart = art ? std::string(art) : "Unknown Artist";
