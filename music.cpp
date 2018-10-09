@@ -16,6 +16,7 @@ static lv_obj_t *scr_music = NULL;
 static lv_obj_t *music_label = NULL;
 static lv_obj_t *music_image = NULL;
 static lv_img_t* cur_image = NULL;
+static lv_obj_t *tobj = NULL;
 
 static lv_obj_t *old_scr = NULL;
 
@@ -41,12 +42,29 @@ void music_init(int argc, char *argv[])
 
     // Build the screen objects
     scr_music = lv_obj_create(NULL, NULL);
+
     music_image = lv_img_create(scr_music, NULL);
-    music_label = lv_label_create(scr_music, NULL);
+
+    tobj = lv_obj_create(scr_music, NULL);
+    music_label = lv_label_create(tobj, NULL);
     lv_obj_set_size(music_image, 240, 240);
     lv_obj_set_x(music_image, 40);
-    lv_obj_set_style(music_label, &lv_style_pretty);
-    lv_obj_refresh_style(music_label);
+
+    // Make a transparent style
+    static lv_style_t ts;
+    lv_style_copy(&ts, &lv_style_plain);
+    ts.body.opa = LV_OPA_50;
+
+    lv_obj_set_style(tobj, &ts);
+    lv_obj_refresh_style(tobj);
+
+    // And a black style for the screen itself
+    static lv_style_t bs;
+    lv_style_copy(&bs, &lv_style_plain);
+    bs.body.main_color = LV_COLOR_BLACK;
+    bs.body.grad_color = LV_COLOR_BLACK;
+    lv_obj_set_style(scr_music, &bs);
+    lv_obj_refresh_style(scr_music);
 }
 
 void speed_ctrl_loop()
@@ -183,7 +201,7 @@ static void populate_id3(std::string fname)
     char *art = get_string("TPE1", t);
 
     id3_file_close(id3);
-    
+
     std::string stit = tit ? std::string(tit) : "Unknown Title";
     std::string salb = alb ? std::string(alb) : "Unknown Album";
     std::string sart = art ? std::string(art) : "Unknown Artist";
@@ -194,6 +212,7 @@ static void populate_id3(std::string fname)
     if(art) free(art);
    
     lv_label_set_text(music_label, ret.c_str());
+    lv_obj_set_width(tobj, lv_obj_get_width(music_label));
 }
 
 void play_music(std::string fname)
