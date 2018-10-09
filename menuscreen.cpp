@@ -31,12 +31,51 @@ lv_obj_t *menuscreen_create()
     return scr_list;
 }
 
+static const char * find_largest_jpg(path cp)
+{
+	uintmax_t max_fs = 0;
+	std::string *cmax = NULL;
+
+	for(auto x : directory_iterator(cp))
+	{
+		auto p = x.path();
+		if(is_regular_file(p) && (p.extension() == ".jpg" || p.extension() == ".jpeg"))
+		{
+			auto csize = file_size(p);
+			if(csize > max_fs)
+			{
+				max_fs = csize;
+				if(cmax)
+					delete cmax;
+				cmax = new std::string(p.c_str());
+			}
+		}
+	}
+
+	if(cmax)
+		return cmax->c_str();
+	else
+		return NULL;
+}
+
 void music_cb(struct dent *dent, struct dent *parent)
 {
-    // TODO: handle screen switch
     std::cout << "music_cb " << dent->p << std::endl;
-    play_music(dent->p.native());
 
+    // generate list of all mp3 files after the current one
+    bool adding = false;
+    std::vector<std::string> subvec;
+    for(int idx = 0; idx < dlist.size(); idx++)
+    {
+        if(equivalent(dlist[idx]->p, dent->p))
+            adding = true;
+        if(adding)
+            subvec.push_back(dlist[idx]->p.native());
+    }
+
+    std::string image(find_largest_jpg(dent->p.parent_path()));
+
+    play_music_list(subvec, image);
 }
 
 void root_cb(

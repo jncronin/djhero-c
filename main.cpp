@@ -153,14 +153,11 @@ int main(int argc, char *argv[])
 	int rc = libevdev_new_from_fd(fd, &dev);
 
 	lv_init();
-	music_init(argc, argv
-	);
+	music_init(argc, argv);
 
-	/
-	/ Framebuffer
+	// Framebuffer
 	fbdev_init();
-	lv_di
-	sp_drv_t disp_drv;
+	lv_disp_drv_t disp_drv;
 	lv_disp_drv_init(&disp_drv);
 	disp_drv.disp_flush = fbdev_flush;
 	lv_disp_drv_register(&disp_drv);
@@ -174,17 +171,6 @@ int main(int argc, char *argv[])
 	
 	// Initialise screen
 	scr_list = menuscreen_create();
-
-	// Now playing screen
-	scr_play = lv_obj_create(NULL, NULL);
-	play_img = lv_img_create(scr_play, NULL);
-	play_lab = lv_label_create(scr_play, NULL);
-
-	lv_img_set_auto_size(play_img, false);
-	lv_obj_set_size(play_img, 240, 240);
-	lv_obj_set_x(play_img, 40);
-	lv_obj_set_style(play_lab, &lv_style_pretty);
-	lv_obj_refresh_style(play_lab);
 
 	lv_scr_load(scr_list);
 

@@ -7,6 +7,16 @@
 #include <fcntl.h>
 
 #include "music.h"
+#include "image.h"
+
+
+// LVGL screen objects
+static lv_obj_t *scr_music = NULL;
+static lv_obj_t *music_label = NULL;
+static lv_obj_t *music_image = NULL;
+static lv_img_t* cur_image = NULL;
+
+static lv_obj_t *old_scr = NULL;
 
 // mouse input - we sample the x value for our speed
 static struct libevdev *mdev = NULL;
@@ -16,6 +26,10 @@ static bool new_speed = false;
 // pipeline data for the main player
 static GstElement *pipeline = NULL;
 
+// playlist
+std::vector<std::string> cur_playlist;
+int cur_playlist_idx = 0;
+
 extern bool music_playing;
 
 static void set_speed(GstElement *pline, int intspeed);
@@ -23,6 +37,15 @@ static void set_speed(GstElement *pline, int intspeed);
 void music_init(int argc, char *argv[])
 {
     gst_init(&argc, &argv);
+
+    // Build the screen objects
+    scr_music = lv_obj_create(NULL, NULL);
+    music_label = lv_label_create(scr_music, NULL);
+    music_image = lv_img_create(scr_music, NULL);
+    lv_obj_set_size(music_image, 240, 240);
+    lv_obj_set_x(music_image, 40);
+    lv_obj_set_style(music_label, &lv_style_pretty);
+    lv_obj_refresh_style(music_label);
 }
 
 void speed_ctrl_loop()
@@ -93,6 +116,30 @@ static void set_speed(GstElement *pline, int intspeed)
         (GstSeekFlags)(GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE),
         GST_SEEK_TYPE_SET, position, GST_SEEK_TYPE_NONE, 0);
     gst_element_send_event(pipeline, seek_event);
+}
+
+void play_music_list(std::vector<std::string> fnames,
+    std::string image)
+{
+    if(fnames.size() == 0)
+        return;
+    
+    // Load folder image
+    auto new_image = load_image(image);
+    lv_img_set_src(music_image, new_image);
+    if(cur_image)
+    {
+        delete ((lv_img_t*)cur_image)->pixel_map;
+        delete cur_image;
+    }
+    cur_image = new_image;
+
+    cur_playlist = fnames;
+    cur_playlist_idx = 0;
+
+    old_scr = lv_scr_act();
+    lv_scr_load(scr_music);
+    play_music(fnames[0]);
 }
 
 void play_music(std::string fname)
