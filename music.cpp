@@ -21,6 +21,8 @@ static lv_obj_t *tobj = NULL;
 static lv_obj_t *prog = NULL;
 static lv_obj_t *speed_slider = NULL;
 static clock_t last_speed_change = 0;
+static lv_obj_t *btn_strip = NULL;
+static lv_group_t *btn_grp = NULL;
 
 static lv_obj_t *scr_load = NULL;
 static lv_obj_t *load_label = NULL;
@@ -41,8 +43,30 @@ std::vector<std::string> cur_playlist;
 int cur_playlist_idx = 0;
 
 extern bool music_playing;
+extern lv_indev_t *kbd;
 
 static void set_speed(GstElement *pline, int intspeed);
+
+static const char *btnm_map[] = { SYMBOL_PREV, SYMBOL_PAUSE, SYMBOL_NEXT, SYMBOL_EJECT, "" };
+
+static void set_hidden(bool hidden)
+{
+    lv_obj_set_hidden(speed_slider, hidden);
+    lv_obj_set_hidden(btn_strip, hidden);
+    lv_obj_set_hidden(tobj, hidden);
+}
+
+void music_unhide()
+{
+    last_speed_change = clock();
+    set_hidden(false);
+}
+
+// null function so that an orange border is not added to btnmap
+static void null_style(lv_style_t *style)
+{
+    (void)style;
+}
 
 void music_init(int argc, char *argv[])
 {
@@ -103,6 +127,15 @@ void music_init(int argc, char *argv[])
     scr_load = lv_obj_create(NULL, NULL);
     load_label = lv_label_create(scr_load, NULL);
     lv_label_set_text(load_label, "Loading...");
+
+    // Button strip
+    btn_strip = lv_btnm_create(scr_music, NULL);
+    lv_btnm_set_map(btn_strip, btnm_map);
+    lv_obj_align(btn_strip, speed_slider, LV_ALIGN_OUT_TOP_MID, 0, 0);
+    lv_btnm_set_style(btn_strip, LV_BTNM_STYLE_BG, &bars);
+    btn_grp = lv_group_create();
+    lv_group_add_obj(btn_grp, btn_strip);
+    lv_group_set_style_mod_cb(btn_grp, null_style);
 }
 
 void speed_ctrl_loop()
@@ -132,8 +165,7 @@ void speed_ctrl_loop()
                 new_speed = true;
 
                 lv_bar_set_value(speed_slider, last_x);
-                lv_obj_set_hidden(speed_slider, false);
-                last_speed_change = clock();
+                music_unhide();
 
                 std::cout << "new speed: " << last_x << std::endl;
             }
@@ -142,7 +174,7 @@ void speed_ctrl_loop()
 
     if((clock() - last_speed_change) > CLOCKS_PER_SEC / 3)
     {
-        lv_obj_set_hidden(speed_slider, true);
+        set_hidden(true);
     }
 }
 
@@ -246,6 +278,7 @@ void play_music_list(std::vector<std::string> fnames,
     cur_playlist_idx = 0;
 
     lv_scr_load(scr_music);
+    lv_indev_set_group(kbd, btn_grp);
     play_music(fnames[0]);
 }
 
@@ -338,4 +371,5 @@ void play_music(std::string fname)
     set_speed(pipeline, last_x);
 
     music_playing = true;
+    music_unhide();
 }

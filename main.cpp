@@ -218,8 +218,22 @@ int main(int argc, char *argv[])
 
 static bool kb_read(lv_indev_data_t *data)
 {
+	static uint32_t last_key;
+	static lv_indev_state_t last_state;
+
+	uint32_t new_key = keycode_to_ascii(kb_last_key);
+
+	// detect any key presses to awaken the buttons on the music screen
+	if(kb_state != last_state || last_key != new_key)
+	{
+		music_unhide();
+		printf("unhiding due to state %u and key %u\n", kb_state, new_key);
+		last_state = kb_state;
+		last_key = new_key;
+	}
+
 	data->state = kb_state;
-	data->key = keycode_to_ascii(kb_last_key);
+	data->key = new_key;
 
 	return false;
 }

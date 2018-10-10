@@ -9,5 +9,6 @@ void play_music(std::string fname);
 void music_init(int argc, char *argv[]);
 void play_music_list(std::vector<std::string> fnames,
                 std::string image);
+void music_unhide();
 
 #endif
