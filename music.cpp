@@ -77,12 +77,21 @@ static lv_res_t btn_cb(lv_obj_t *btnm, const char *txt)
     if(!strcmp(txt, SYMBOL_PAUSE))
     {
         std::cout << "Pause" << std::endl;
-        lv_btnm_set_map(btn_strip, btnm_map2);
+        if(pipeline)
+        {
+            gst_element_set_state(pipeline, GST_STATE_PAUSED);
+            lv_btnm_set_map(btn_strip, btnm_map2);
+        }
     }
     else if(!strcmp(txt, SYMBOL_PLAY))
     {
         std::cout << "Play" << std::endl;
-        lv_btnm_set_map(btn_strip, btnm_map);
+        if(pipeline)
+        {
+            gst_element_set_state(pipeline, GST_STATE_PLAYING);
+            set_speed(pipeline, last_x);
+            lv_btnm_set_map(btn_strip, btnm_map);
+        }
     }
     else if(!strcmp(txt, SYMBOL_PREV))
     {
