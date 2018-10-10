@@ -17,6 +17,7 @@ static lv_obj_t *music_label = NULL;
 static lv_obj_t *music_image = NULL;
 static lv_img_t* cur_image = NULL;
 static lv_obj_t *tobj = NULL;
+static lv_obj_t *prog = NULL;
 
 static lv_obj_t *old_scr = NULL;
 
@@ -65,6 +66,11 @@ void music_init(int argc, char *argv[])
     bs.body.grad_color = LV_COLOR_BLACK;
     lv_obj_set_style(scr_music, &bs);
     lv_obj_refresh_style(scr_music);
+
+    // Progress bar
+    prog = lv_bar_create(scr_music, NULL);
+    lv_obj_align(prog, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+
 }
 
 void speed_ctrl_loop()
@@ -109,6 +115,14 @@ void music_loop()
         {
             set_speed(pipeline, last_x);
         }
+    }
+
+    if(pipeline)
+    {
+        gint64 position;
+
+        while(!gst_element_query_position(pipeline, GST_FORMAT_TIME, &position));
+        lv_bar_set_value(prog, (int)(position/1000000000));
     }
 
     new_speed = false;
@@ -236,6 +250,13 @@ void play_music(std::string fname)
         // TODO
         return;
     }
+
+    // get duration into bar
+    gint64 dur;
+
+    while(!gst_element_query_duration(pipeline, GST_FORMAT_TIME, &dur));
+    lv_bar_set_value(prog, 0);
+    lv_bar_set_range(prog, 0, (int)(dur/1000000000));
 
     // set initial speed
     set_speed(pipeline, last_x);
