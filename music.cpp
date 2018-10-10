@@ -48,6 +48,7 @@ extern lv_indev_t *kbd;
 static void set_speed(GstElement *pline, int intspeed);
 
 static const char *btnm_map[] = { SYMBOL_PREV, SYMBOL_PAUSE, SYMBOL_NEXT, SYMBOL_EJECT, "" };
+static const char *btnm_map2[] = { SYMBOL_PREV, SYMBOL_PLAY, SYMBOL_NEXT, SYMBOL_EJECT, "" };
 
 static void set_hidden(bool hidden)
 {
@@ -66,6 +67,36 @@ void music_unhide()
 static void null_style(lv_style_t *style)
 {
     (void)style;
+}
+
+// callback for buttons
+static lv_res_t btn_cb(lv_obj_t *btnm, const char *txt)
+{
+    (void)btnm;
+
+    if(!strcmp(txt, SYMBOL_PAUSE))
+    {
+        std::cout << "Pause" << std::endl;
+        lv_btnm_set_map(btn_strip, btnm_map2);
+    }
+    else if(!strcmp(txt, SYMBOL_PLAY))
+    {
+        std::cout << "Play" << std::endl;
+        lv_btnm_set_map(btn_strip, btnm_map);
+    }
+    else if(!strcmp(txt, SYMBOL_PREV))
+    {
+        std::cout << "Prev" << std::endl;
+    }
+    else if(!strcmp(txt, SYMBOL_NEXT))
+    {
+        std::cout << "Next" << std::endl;
+    }
+    else if(!strcmp(txt, SYMBOL_EJECT))
+    {
+        std::cout << "Eject" << std::endl;
+    }
+    return LV_RES_OK;
 }
 
 void music_init(int argc, char *argv[])
@@ -136,6 +167,7 @@ void music_init(int argc, char *argv[])
     btn_grp = lv_group_create();
     lv_group_add_obj(btn_grp, btn_strip);
     lv_group_set_style_mod_cb(btn_grp, null_style);
+    lv_btnm_set_action(btn_strip, btn_cb);
 }
 
 void speed_ctrl_loop()
