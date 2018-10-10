@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <id3tag.h>
+#include <time.h>
 
 #include "music.h"
 #include "image.h"
@@ -18,6 +19,8 @@ static lv_obj_t *music_image = NULL;
 static lv_img_t* cur_image = NULL;
 static lv_obj_t *tobj = NULL;
 static lv_obj_t *prog = NULL;
+static lv_obj_t *speed_slider = NULL;
+static clock_t last_speed_change = 0;
 
 static lv_obj_t *old_scr = NULL;
 
@@ -71,6 +74,12 @@ void music_init(int argc, char *argv[])
     prog = lv_bar_create(scr_music, NULL);
     lv_obj_align(prog, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
 
+    // Speed slider
+    speed_slider = lv_bar_create(scr_music, NULL);
+    lv_obj_align(speed_slider, prog, LV_ALIGN_OUT_TOP_MID, 0, 0);
+    lv_bar_set_range(speed_slider, 1, 21);
+    lv_bar_set_value(speed_slider, 11);
+    lv_obj_set_hidden(speed_slider, true);
 }
 
 void speed_ctrl_loop()
@@ -99,9 +108,18 @@ void speed_ctrl_loop()
                 last_x = ev.value;
                 new_speed = true;
 
+                lv_bar_set_value(speed_slider, last_x);
+                lv_obj_set_hidden(speed_slider, false);
+                last_speed_change = clock();
+
                 std::cout << "new speed: " << last_x << std::endl;
             }
         }
+    }
+
+    if((clock() - last_speed_change) > CLOCKS_PER_SEC / 3)
+    {
+        lv_obj_set_hidden(speed_slider, true);
     }
 }
 
