@@ -22,6 +22,9 @@ static lv_obj_t *prog = NULL;
 static lv_obj_t *speed_slider = NULL;
 static clock_t last_speed_change = 0;
 
+static lv_obj_t *scr_load = NULL;
+static lv_obj_t *load_label = NULL;
+
 static lv_obj_t *old_scr = NULL;
 
 // mouse input - we sample the x value for our speed
@@ -80,6 +83,25 @@ void music_init(int argc, char *argv[])
     lv_bar_set_range(speed_slider, 1, 21);
     lv_bar_set_value(speed_slider, 11);
     lv_obj_set_hidden(speed_slider, true);
+
+    // Style for the above
+    static lv_style_t bars;
+    lv_style_copy(&bars, &lv_style_pretty);
+    bars.body.empty = true;
+    bars.body.border.color = LV_COLOR_WHITE;
+    bars.body.border.part = LV_BORDER_FULL;
+    bars.body.border.width = 2;
+    lv_bar_set_style(prog, LV_BAR_STYLE_BG, &bars);
+    lv_bar_set_style(prog, LV_BAR_STYLE_INDIC, &lv_style_pretty);
+    lv_obj_refresh_style(prog);
+    lv_bar_set_style(speed_slider, LV_BAR_STYLE_BG, &bars);
+    lv_bar_set_style(speed_slider, LV_BAR_STYLE_INDIC, &lv_style_pretty);
+    lv_obj_refresh_style(speed_slider);
+
+    // Load screen
+    scr_load = lv_obj_create(NULL, NULL);
+    load_label = lv_label_create(scr_load, NULL);
+    lv_label_set_text(load_label, "Loading...");
 }
 
 void speed_ctrl_loop()
@@ -173,6 +195,12 @@ void play_music_list(std::vector<std::string> fnames,
 {
     if(fnames.size() == 0)
         return;
+
+    // Display loading screen
+    old_scr = lv_scr_act();
+    lv_scr_load(scr_load);
+    lv_task_handler();
+    lv_tick_inc(5);
     
     // Load folder image
     auto new_image = load_image(image);
@@ -187,7 +215,6 @@ void play_music_list(std::vector<std::string> fnames,
     cur_playlist = fnames;
     cur_playlist_idx = 0;
 
-    old_scr = lv_scr_act();
     lv_scr_load(scr_music);
     play_music(fnames[0]);
 }
