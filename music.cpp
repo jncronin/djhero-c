@@ -34,6 +34,7 @@ static bool new_speed = false;
 
 // pipeline data for the main player
 static GstElement *pipeline = NULL;
+static GstBus *bus = NULL;
 
 // playlist
 std::vector<std::string> cur_playlist;
@@ -163,11 +164,40 @@ void music_loop()
 
         while(!gst_element_query_position(pipeline, GST_FORMAT_TIME, &position));
         lv_bar_set_value(prog, (int)(position/1000000000));
+
+        // if we are within the first 5 seconds of a track, ensure duration is also updated
+        if(position < 5000000000)
+        {
+            gint64 duration;
+            while(!gst_element_query_duration(pipeline, GST_FORMAT_TIME, &duration));
+            lv_bar_set_range(prog, 0, (int)(duration/1000000000));
+        }
     }
 
     new_speed = false;
 
-    // TODO handle music events
+    while(auto msg = gst_bus_pop_filtered(bus, (GstMessageType)(GST_MESSAGE_ERROR | GST_MESSAGE_EOS)))
+    {
+        switch(GST_MESSAGE_TYPE(msg))
+        {
+            case GST_MESSAGE_ERROR:
+                std::cout << "gst error" << std::endl;
+                break;
+
+            case GST_MESSAGE_EOS:
+                // Enqueue next track if available
+                if(cur_playlist_idx++ < cur_playlist.size())
+                {
+                    play_music(cur_playlist[cur_playlist_idx]);
+                }
+                else
+                {
+                    music_playing = false;
+                    lv_scr_load(old_scr);
+                }
+                break;                
+        }
+    }
 }
 
 double dspeeds[] = {
@@ -283,6 +313,7 @@ void play_music(std::string fname)
         // instantiate a new pipeline here once only
         //  - it can be reused by setting the uri property
         pipeline = gst_element_factory_make("playbin", "playbin");
+        bus = gst_element_get_bus(pipeline);
     }
 
     g_object_set(pipeline, "uri", ("file:///" + fname).c_str(), NULL);
