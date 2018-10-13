@@ -10,7 +10,7 @@ std::vector<struct dent*> game_list();
 // LVGL screen objects
 static lv_obj_t *scr_list = NULL;
 static lv_obj_t *list = NULL;
-static lv_group_t *list_grp = NULL;
+extern lv_group_t *list_grp;
 
 // Keyboard driver for associating with the group
 extern lv_indev_t *kbd;

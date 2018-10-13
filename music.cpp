@@ -44,6 +44,7 @@ int cur_playlist_idx = 0;
 
 extern bool music_playing;  // is the music screen showing
 extern lv_indev_t *kbd;
+extern lv_group_t *list_grp;
 
 static void set_speed(GstElement *pline, int intspeed);
 
@@ -121,6 +122,13 @@ static lv_res_t btn_cb(lv_obj_t *btnm, const char *txt)
     else if(!strcmp(txt, SYMBOL_EJECT))
     {
         std::cout << "Eject" << std::endl;
+        if(pipeline)
+            gst_element_set_state(pipeline, GST_STATE_NULL);
+        music_playing = false;
+        lv_scr_load(old_scr);
+        lv_task_handler();
+        lv_tick_inc(5);
+        lv_indev_set_group(kbd, list_grp);
     }
     return LV_RES_OK;
 }
@@ -282,8 +290,10 @@ void music_loop()
                 }
                 else
                 {
+                    gst_element_set_state(pipeline, GST_STATE_NULL);
                     music_playing = false;
                     lv_scr_load(old_scr);
+                    lv_indev_set_group(kbd, list_grp);
                 }
                 break;                
         }
