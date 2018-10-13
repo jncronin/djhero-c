@@ -75,6 +75,12 @@ static uint32_t keycode_to_ascii(uint32_t ie_key)
 			return LV_GROUP_KEY_ESC;
 		case KEY_ENTER:
 			return LV_GROUP_KEY_ENTER;
+		case KEY_R:
+			return 'r';
+		case KEY_G:
+			return 'g';
+		case KEY_B:
+			return 'b';
 		case KEY_BACKSPACE:
 			return '\b';
 		default:
@@ -236,11 +242,11 @@ static bool kb_read(lv_indev_data_t *data)
 		// handle overlay buttons
 		if(last_state == LV_INDEV_STATE_PR)
 		{
-			if(last_key == KEY_R)
+			if(last_key == 'r')
 				overlay_play(0);
-			else if(last_key == KEY_G)
+			else if(last_key == 'g')
 				overlay_play(1);
-			else if(last_key == KEY_B)
+			else if(last_key == 'b')
 				overlay_play(2);
 		}
 	}
