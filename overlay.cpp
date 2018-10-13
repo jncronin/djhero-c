@@ -68,6 +68,10 @@ static void show_overlay_image(int id)
 void overlay_init()
 {
     ov_pipeline = gst_element_factory_make("playbin", "playbin");
+    
+    // Set overlay louder than music player
+    g_object_set(ov_pipeline, "volume", 3.0, NULL);
+    
     bus = gst_element_get_bus(ov_pipeline);
 
     scrs = new lv_obj_t*[3];
