@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "music.h"
+#include "image.h"
 
 // GStreamer objects
 GstElement *ov_pipeline = NULL;
@@ -23,10 +24,44 @@ extern int last_x;
 // images
 int cur_id = -1;
 int new_id = -1;
+static const char *imgfiles[] = 
+{
+    "/home/jncronin/src/djhero-c/a.jpg",
+    "/home/jncronin/src/djhero-c/b.jpg",
+    "/home/jncronin/src/djhero-c/c.jpg",
+};
+lv_obj_t **scrs;
+lv_obj_t *old_scr = NULL;
 
 static void show_overlay_image(int id)
 {
     std::cout << "Show image " << id << std::endl;
+    if(id >= 0)
+    {
+        // Only save the old screen if it
+        //  is not an overlay image
+        auto cur_scr = lv_scr_act();
+        bool is_img = false;
+        for(int i = 0; i < 3; i++)
+        {
+            if(scrs[i] == cur_scr)
+            {
+                is_img = true;
+                break;
+            }
+        }
+               
+        if(!is_img)
+        {
+            old_scr = cur_scr;
+        }
+        lv_scr_load(scrs[id]);
+    }
+    else
+    {
+        lv_scr_load(old_scr);
+    }
+    
     cur_id = id;
 }
 
@@ -34,6 +69,15 @@ void overlay_init()
 {
     ov_pipeline = gst_element_factory_make("playbin", "playbin");
     bus = gst_element_get_bus(ov_pipeline);
+
+    scrs = new lv_obj_t*[3];
+    for(int i = 0; i < 3; i++)
+    {
+        scrs[i] = lv_obj_create(NULL, NULL);
+        auto img = lv_img_create(scrs[i], NULL);
+        lv_obj_set_size(img, 320, 240);
+        lv_img_set_src(img, load_image(std::string(imgfiles[i]), 320, 240));
+    }
 }
 
 void overlay_loop()
@@ -72,6 +116,7 @@ void overlay_loop()
                         show_overlay_image(new_id);
                     }
                 }
+                break;
         }
 
         gst_message_unref(msg);
