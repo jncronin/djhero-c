@@ -210,6 +210,7 @@ int main(int argc, char *argv[])
 			}
 
 			speed_ctrl_loop();
+			overlay_loop();
 			if(music_playing)
 			{
 				music_loop();

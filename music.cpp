@@ -31,8 +31,9 @@ static lv_obj_t *old_scr = NULL;
 
 // mouse input - we sample the x value for our speed
 static struct libevdev *mdev = NULL;
-static int last_x = 11; // centre
+int last_x = 11; // centre
 static bool new_speed = false;
+extern bool new_ov_speed;
 
 // pipeline data for the main player
 static GstElement *pipeline = NULL;
@@ -45,8 +46,6 @@ int cur_playlist_idx = 0;
 extern bool music_playing;  // is the music screen showing
 extern lv_indev_t *kbd;
 extern lv_group_t *list_grp;
-
-static void set_speed(GstElement *pline, int intspeed);
 
 static const char *btnm_map[] = { SYMBOL_PREV, SYMBOL_PAUSE, SYMBOL_NEXT, SYMBOL_EJECT, "" };
 static const char *btnm_map2[] = { SYMBOL_PREV, SYMBOL_PLAY, SYMBOL_NEXT, SYMBOL_EJECT, "" };
@@ -229,6 +228,7 @@ void speed_ctrl_loop()
             {
                 last_x = ev.value;
                 new_speed = true;
+                new_ov_speed = true;
 
                 lv_bar_set_value(speed_slider, last_x);
                 music_unhide();
@@ -309,17 +309,29 @@ double dspeeds[] = {
     3.6, 3.9
 };
 
-static void set_speed(GstElement *pline, int intspeed)
+void set_speed(GstElement *pline, int intspeed)
 {
     double dspeed = dspeeds[intspeed];
 
     gint64 position;
 
-    while(!gst_element_query_position(pipeline, GST_FORMAT_TIME, &position));
-    auto seek_event = gst_event_new_seek(dspeed, GST_FORMAT_TIME,
-        (GstSeekFlags)(GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE),
-        GST_SEEK_TYPE_SET, position, GST_SEEK_TYPE_NONE, 0);
-    gst_element_send_event(pipeline, seek_event);
+    std::cout << "set_speed" << std::endl;
+    GstState st;
+    gst_element_get_state(pline, &st, NULL, 200000000);
+    if(st != GST_STATE_PLAYING)
+    {
+        std::cout << "pipeline not playing in time" << std::endl;
+        return;
+    }
+
+    if(gst_element_query_position(pline, GST_FORMAT_TIME, &position))
+    {
+        auto seek_event = gst_event_new_seek(dspeed, GST_FORMAT_TIME,
+            (GstSeekFlags)(GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE),
+            GST_SEEK_TYPE_SET, position, GST_SEEK_TYPE_NONE, 0);
+        gst_element_send_event(pline, seek_event);
+    }
+    std::cout << "set_speed done" << std::endl;
 }
 
 void play_music_list(std::vector<std::string> fnames,

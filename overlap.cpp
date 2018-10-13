@@ -1,5 +1,8 @@
 #include <lvgl/lvgl.h>
 #include <gst/gst.h>
+#include <iostream>
+
+#include "music.h"
 
 // GStreamer objects
 GstElement *ov_pipeline = NULL;
@@ -13,6 +16,20 @@ static const char *ofiles[] =
     "file:///home/jncronin/djhero/c.aif"
 };
 
+// speed control
+bool new_ov_speed = false;
+extern int last_x;
+
+// images
+int cur_id = -1;
+int new_id = -1;
+
+static void show_overlay_image(int id)
+{
+    std::cout << "Show image " << id << std::endl;
+    cur_id = id;
+}
+
 void overlay_init()
 {
     ov_pipeline = gst_element_factory_make("playbin", "playbin");
@@ -21,20 +38,66 @@ void overlay_init()
 
 void overlay_loop()
 {
-    // TODO
+    if(new_ov_speed && ov_pipeline)
+    {
+        std::cout << "new_ov_speed" << std::endl;
+        set_speed(ov_pipeline, last_x);
+        std::cout << "new_ov_speed done" << std::endl;
+    }
+    // TODO handle events
+
+    while(auto msg = gst_bus_pop_filtered(bus, (GstMessageType)(GST_MESSAGE_ERROR | GST_MESSAGE_EOS | GST_MESSAGE_STATE_CHANGED)))
+    {
+        switch(GST_MESSAGE_TYPE(msg))
+        {
+            case GST_MESSAGE_ERROR:
+                std::cout << "gst ov error" << std::endl;
+                show_overlay_image(-1);
+                gst_element_set_state(ov_pipeline, GST_STATE_NULL);
+                break;
+
+            case GST_MESSAGE_EOS:
+                show_overlay_image(-1);
+                gst_element_set_state(ov_pipeline, GST_STATE_NULL);
+                break;
+
+            case GST_MESSAGE_STATE_CHANGED:
+                GstState st;
+                gst_element_get_state(ov_pipeline, &st, NULL, 0);
+                if(st == GST_STATE_PLAYING)
+                {
+                    // we may need to update the image
+                    if(cur_id != new_id)
+                    {
+                        show_overlay_image(new_id);
+                    }
+                }
+        }
+
+        gst_message_unref(msg);
+    }
+
+    new_ov_speed = false;
 }
 
 void overlay_play(int id)
 {
     static int cur_id = -1;
 
-    gst_element_set_state(ov_pipeline, GST_STATE_NULL);
-    g_object_set(ov_pipeline, "uri", ofiles[id], NULL);
-    gst_element_set_state(ov_pipeline, GST_STATE_PLAYING);
+    std::cout << "overlay_play" << std::endl;
 
-    if(id != cur_id)
+    gst_element_set_state(ov_pipeline, GST_STATE_NULL);
+    std::cout << "setting uri" << std::endl;
+    g_object_set(ov_pipeline, "uri", ofiles[id], NULL);
+    auto ret = gst_element_set_state(ov_pipeline, GST_STATE_PLAYING);
+    if(ret == GST_STATE_CHANGE_FAILURE)
     {
-        // TODO: show image
-        cur_id = id;
+        std::cout << "Error playing overlay" << std::endl;
+        return;
     }
+    set_speed(ov_pipeline, last_x);
+
+    new_id = id;
+
+    std::cout << "overlay_play done" << std::endl;
 }
