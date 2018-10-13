@@ -235,8 +235,12 @@ static bool kb_read(lv_indev_data_t *data)
 	// detect any key presses to awaken the buttons on the music screen
 	if(kb_state != last_state || last_key != new_key)
 	{
-		music_unhide();
-		printf("unhiding due to state %u and key %u\n", kb_state, new_key);
+		// don't unhide if an overlay button is pressed
+		if(new_key != 'r' && new_key != 'g' && new_key != 'b')
+		{
+			music_unhide();
+			printf("unhiding due to state %u and key %u\n", kb_state, new_key);
+		}
 		last_state = kb_state;
 		last_key = new_key;
 
