@@ -14,6 +14,7 @@
 #include "dirlist.h"
 #include "menuscreen.h"
 #include "music.h"
+#include "overlay.h"
 
 #if LV_MEM_CUSTOM == 0
 #error Please set lv_conf.h LV_MEM_CUSTOM to 1
@@ -154,6 +155,7 @@ int main(int argc, char *argv[])
 
 	lv_init();
 	music_init(argc, argv);
+	overlay_init();
 
 	// Framebuffer
 	fbdev_init();
@@ -230,6 +232,17 @@ static bool kb_read(lv_indev_data_t *data)
 		printf("unhiding due to state %u and key %u\n", kb_state, new_key);
 		last_state = kb_state;
 		last_key = new_key;
+
+		// handle overlay buttons
+		if(last_state == LV_INDEV_STATE_PR)
+		{
+			if(last_key == KEY_R)
+				overlay_play(0);
+			else if(last_key == KEY_G)
+				overlay_play(1);
+			else if(last_key == KEY_B)
+				overlay_play(2);
+		}
 	}
 
 	data->state = kb_state;
