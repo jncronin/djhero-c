@@ -313,7 +313,7 @@ static void set_speed(GstElement *pline, int intspeed)
 }
 
 void play_music_list(std::vector<std::string> fnames,
-    std::string image)
+    std::string image, int start_at)
 {
     if(fnames.size() == 0)
         return;
@@ -335,11 +335,11 @@ void play_music_list(std::vector<std::string> fnames,
     cur_image = new_image;
 
     cur_playlist = fnames;
-    cur_playlist_idx = 0;
+    cur_playlist_idx = start_at;
 
     lv_scr_load(scr_music);
     lv_indev_set_group(kbd, btn_grp);
-    play_music(fnames[0]);
+    play_music(fnames[cur_playlist_idx]);
 }
 
 static char *get_string(const char *tag_name, struct id3_tag *t)
@@ -388,7 +388,10 @@ static void populate_id3(std::string fname)
     std::string salb = alb ? std::string(alb) : "Unknown Album";
     std::string sart = art ? std::string(art) : "Unknown Artist";
 
-    std::string ret = stit + "\n" + salb + "\n" + sart;
+    static char track_no[64];
+    snprintf(track_no, 63, "%i/%i - ", cur_playlist_idx + 1, cur_playlist.size());
+
+    std::string ret = std::string(track_no) + stit + "\n" + salb + "\n" + sart;
     if(tit) free(tit);
     if(alb) free(alb);
     if(art) free(art);

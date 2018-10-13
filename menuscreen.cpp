@@ -62,20 +62,23 @@ void music_cb(struct dent *dent, struct dent *parent)
 {
     std::cout << "music_cb " << dent->p << std::endl;
 
-    // generate list of all mp3 files after the current one
-    bool adding = false;
+    // generate list of all mp3 files and note the index
+    //  of the selected one
     std::vector<std::string> subvec;
+    int start_at = 0;
     for(int idx = 0; idx < dlist.size(); idx++)
     {
-        if(equivalent(dlist[idx]->p, dent->p))
-            adding = true;
-        if(adding)
+        if(is_regular_file(dlist[idx]->p))
+        {
+            if(equivalent(dlist[idx]->p, dent->p))
+                start_at = subvec.size();
             subvec.push_back(dlist[idx]->p.native());
+        }
     }
 
     std::string image(find_largest_jpg(dent->p.parent_path()));
 
-    play_music_list(subvec, image);
+    play_music_list(subvec, image, start_at);
 }
 
 void root_cb(
