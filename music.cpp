@@ -42,7 +42,7 @@ static GstBus *bus = NULL;
 std::vector<std::string> cur_playlist;
 int cur_playlist_idx = 0;
 
-extern bool music_playing;
+extern bool music_playing;  // is the music screen showing
 extern lv_indev_t *kbd;
 
 static void set_speed(GstElement *pline, int intspeed);
@@ -96,10 +96,27 @@ static lv_res_t btn_cb(lv_obj_t *btnm, const char *txt)
     else if(!strcmp(txt, SYMBOL_PREV))
     {
         std::cout << "Prev" << std::endl;
+        if(pipeline)
+        {
+            --cur_playlist_idx;
+            if(cur_playlist_idx < 0)
+                cur_playlist_idx = 0;
+
+            gst_element_set_state(pipeline, GST_STATE_NULL);
+            play_music(cur_playlist[cur_playlist_idx]);
+            lv_btnm_set_map(btn_strip, btnm_map);
+        }
     }
     else if(!strcmp(txt, SYMBOL_NEXT))
     {
         std::cout << "Next" << std::endl;
+        if(pipeline && cur_playlist_idx < (cur_playlist.size() - 1))
+        {
+            ++cur_playlist_idx;
+            gst_element_set_state(pipeline, GST_STATE_NULL);
+            play_music(cur_playlist[cur_playlist_idx]);
+            lv_btnm_set_map(btn_strip, btnm_map);
+        }
     }
     else if(!strcmp(txt, SYMBOL_EJECT))
     {
@@ -259,7 +276,7 @@ void music_loop()
 
             case GST_MESSAGE_EOS:
                 // Enqueue next track if available
-                if(cur_playlist_idx++ < cur_playlist.size())
+                if(++cur_playlist_idx < cur_playlist.size())
                 {
                     play_music(cur_playlist[cur_playlist_idx]);
                 }
@@ -270,6 +287,8 @@ void music_loop()
                 }
                 break;                
         }
+
+        gst_message_unref(msg);
     }
 }
 
