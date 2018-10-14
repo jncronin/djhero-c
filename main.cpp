@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <pigpio.h>
 
 #include "dirlist.h"
 #include "menuscreen.h"
@@ -27,6 +28,21 @@ using std::endl;
 static void populate_list(lv_obj_t **l, path p);
 static const void *load_image(const char *fname);
 static bool kb_read(lv_indev_data_t *data);
+
+// Run a pigpio command
+void gpio_cmd(std::string cmd)
+{
+	int fd = open("/dev/pigpio", O_WRONLY);
+	if(fd == -1)
+	{
+		std::cerr << "unable to open pigpio" << std::endl;
+	}
+	else
+	{
+		write(fd, cmd.c_str(), cmd.size());
+		close(fd);
+	}
+}
 
 // Is a game currently playing?  Used to ignore input
 bool game_playing = false;
@@ -58,6 +74,17 @@ std::vector<struct dent*> dlist;
 static uint32_t kb_last_key;
 static lv_indev_state_t kb_state;
 static struct libevdev *dev = NULL;
+
+// Send a character to the ttyACM0 device
+void send_serial(char c)
+{
+	int fd = open("/dev/ttyACM0", O_WRONLY);
+	if(fd != -1)
+	{
+		write(fd, &c, 1);
+		close(fd);
+	}
+}
 
 static uint32_t keycode_to_ascii(uint32_t ie_key)
 {
@@ -148,6 +175,21 @@ static lv_res_t list_cb(lv_obj_t *btn)
 	return LV_RES_OK;
 }
 
+void pulse_audio_ports()
+{
+	gpio_cmd("w 2 0");
+	usleep(20000);
+	gpio_cmd("w 2 1");
+	usleep(20000);
+	gpio_cmd("w 3 0");
+	usleep(20000);
+	gpio_cmd("w 3 1");
+	usleep(20000);
+	gpio_cmd("w 2 0");
+	usleep(20000);
+	gpio_cmd("w 2 1");
+}
+
 int main(int argc, char *argv[])
 {
 	int fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
@@ -158,6 +200,14 @@ int main(int argc, char *argv[])
 	}
 
 	int rc = libevdev_new_from_fd(fd, &dev);
+
+	// set big button LED to constant
+	send_serial('9');
+
+	// set up gpios - 22 is motor control active low
+	// 2 and 3 are amplifier reset ports
+	gpio_cmd("m 22 w m 2 w m 3 w w 22 1");
+	pulse_audio_ports();
 
 	lv_init();
 	music_init(argc, argv);

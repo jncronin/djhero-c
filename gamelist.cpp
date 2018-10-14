@@ -3,6 +3,8 @@
 #include "dirlist.h"
 #include "menuscreen.h"
 
+void send_serial(char c);
+
 extern bool game_playing;
 
 static lv_obj_t *load_scr = NULL;
@@ -38,6 +40,7 @@ static void game_cb(struct dent *dent, struct dent *parent)
 {
     (void)parent;
 
+    send_serial('0');
     auto gd = (struct gamedent *)dent;
     std::cout << "game_cb: " << gd->cmdline << std::endl;
     auto old_scr = lv_scr_act();
@@ -48,8 +51,9 @@ static void game_cb(struct dent *dent, struct dent *parent)
     game_playing = true;
     system(gd->cmdline.c_str());
     game_playing = false;
-    std::cout << "game done";
+    std::cout << "game done" << std::endl;
     lv_scr_load(old_scr);
+    send_serial('9');
 }
 
 static struct gamedent *mame(std::string pretty, std::string mamename)
