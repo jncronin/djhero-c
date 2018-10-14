@@ -30,17 +30,19 @@ static const void *load_image(const char *fname);
 static bool kb_read(lv_indev_data_t *data);
 
 // Run a pigpio command
+static const char newl[] = "\n";
 void gpio_cmd(std::string cmd)
 {
-	int fd = open("/dev/pigpio", O_WRONLY);
-	if(fd == -1)
+	auto fd = fopen("/dev/pigpio", "w");
+	if(fd == NULL) 
 	{
 		std::cerr << "unable to open pigpio" << std::endl;
 	}
 	else
 	{
-		write(fd, cmd.c_str(), cmd.size());
-		close(fd);
+		fwrite(cmd.c_str(), 1, cmd.size(), fd);
+		fwrite(newl, 1, 1, fd);
+		fclose(fd);
 	}
 }
 
@@ -206,7 +208,10 @@ int main(int argc, char *argv[])
 
 	// set up gpios - 22 is motor control active low
 	// 2 and 3 are amplifier reset ports
-	gpio_cmd("m 22 w m 2 w m 3 w w 22 1");
+	gpio_cmd("m 22 w");
+	gpio_cmd("m 2 w");
+	gpio_cmd("m 3 w");
+	gpio_cmd("w 22 1");
 	pulse_audio_ports();
 
 	lv_init();
