@@ -106,33 +106,6 @@ static uint32_t keycode_to_ascii(uint32_t ie_key)
 	}
 }
 
-static const char * find_largest_jpg(path cp)
-{
-	uintmax_t max_fs = 0;
-	std::string *cmax = NULL;
-
-	for(auto x : directory_iterator(cp))
-	{
-		auto p = x.path();
-		if(is_regular_file(p) && (p.extension() == ".jpg" || p.extension() == ".jpeg"))
-		{
-			auto csize = file_size(p);
-			if(csize > max_fs)
-			{
-				max_fs = csize;
-				if(cmax)
-					delete cmax;
-				cmax = new std::string(p.c_str());
-			}
-		}
-	}
-
-	if(cmax)
-		return cmax->c_str();
-	else
-		return NULL;
-}
-
 void pulse_audio_ports()
 {
 	gpio_cmd("w 2 0");
