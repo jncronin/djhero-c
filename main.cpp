@@ -214,6 +214,11 @@ int main(int argc, char *argv[])
 	gpio_cmd("w 22 1");
 	pulse_audio_ports();
 
+	// set up led/laser as pwm but off for now
+	gpio_cmd("m 12 w");
+	gpio_cmd("pfs 12 10");
+	gpio_cmd("p 12 0");
+
 	lv_init();
 	music_init(argc, argv);
 	overlay_init();

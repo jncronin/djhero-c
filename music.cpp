@@ -83,6 +83,7 @@ static lv_res_t btn_cb(lv_obj_t *btnm, const char *txt)
         {
             gst_element_set_state(pipeline, GST_STATE_PAUSED);
 	    gpio_cmd("w 22 1");
+	    gpio_cmd("p 12 0");
             lv_btnm_set_map(btn_strip, btnm_map2);
         }
     }
@@ -94,6 +95,7 @@ static lv_res_t btn_cb(lv_obj_t *btnm, const char *txt)
             gst_element_set_state(pipeline, GST_STATE_PLAYING);
             set_speed(pipeline, last_x);
 	    gpio_cmd("w 22 0");
+	    gpio_cmd("p 12 128");
             lv_btnm_set_map(btn_strip, btnm_map);
         }
     }
@@ -129,6 +131,7 @@ static lv_res_t btn_cb(lv_obj_t *btnm, const char *txt)
             gst_element_set_state(pipeline, GST_STATE_NULL);
         music_playing = false;
 	gpio_cmd("w 22 1");
+	gpio_cmd("p 12 0");
         lv_scr_load(old_scr);
         lv_task_handler();
         lv_tick_inc(5);
@@ -298,6 +301,7 @@ void music_loop()
                     gst_element_set_state(pipeline, GST_STATE_NULL);
                     music_playing = false;
 		    gpio_cmd("w 22 1");
+		    gpio_cmd("p 12 0");
                     lv_scr_load(old_scr);
                     lv_indev_set_group(kbd, list_grp);
                 }
@@ -462,6 +466,7 @@ void play_music(std::string fname)
     set_speed(pipeline, last_x);
 
     gpio_cmd("w 22 0");
+    gpio_cmd("p 12 128");
     music_playing = true;
     music_unhide();
 }
