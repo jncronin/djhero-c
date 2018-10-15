@@ -1,5 +1,11 @@
 #include <lvgl/lvgl.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <stdio.h>
+#include <arpa/inet.h>
+#include <vector>
+#include <string>
 
 #include "menuscreen.h"
 #include "dirlist.h"
@@ -35,6 +41,65 @@ static void v100_cb(struct dent *dent, struct dent *parent)
 	system("/usr/bin/amixer sset Master playback 100%");
 }
 
+static void netaddr_cb(struct dent *dent, struct dent *parent)
+{
+	std::vector<struct dent *> v;
+
+	// Add back button
+	auto prev_dent = new struct dent();
+	prev_dent->name = SYMBOL_DIRECTORY"  ..";
+	prev_dent->cb = options_cb;
+	v.push_back(prev_dent);
+
+	// Iterate interfaces
+	struct ifaddrs *ifap;
+	int r = getifaddrs(&ifap);
+	if(r == 0)
+	{
+		struct ifaddrs *cif = ifap;
+
+		while(cif != NULL)
+		{
+			switch(cif->ifa_addr->sa_family)
+			{
+				case AF_INET:
+					{
+						char addr[INET_ADDRSTRLEN+1];
+						inet_ntop(AF_INET, &((struct sockaddr_in *)cif->ifa_addr)->sin_addr,
+								addr, INET_ADDRSTRLEN);
+						
+						auto ad_dent = new struct dent();
+						ad_dent->name = std::string(cif->ifa_name) + ": " +
+							std::string(addr);
+						ad_dent->cb = NULL;
+						v.push_back(ad_dent);
+					}
+					break;
+
+				case AF_INET6:
+					{
+						char addr[INET6_ADDRSTRLEN+1];
+						inet_ntop(AF_INET6, &((struct sockaddr_in *)cif->ifa_addr)->sin_addr,
+								addr, INET6_ADDRSTRLEN);
+						
+						auto ad_dent = new struct dent();
+						ad_dent->name = std::string(cif->ifa_name) + ": " +
+							std::string(addr);
+						ad_dent->cb = NULL;
+						v.push_back(ad_dent);
+					}
+					break;
+			}
+		
+			cif = cif->ifa_next;
+		}
+		freeifaddrs(ifap);
+	}
+
+	populate_list(&list, NULL, v);
+}
+
+
 void options_cb(struct dent *dent, struct dent *parent)
 {
 	std::vector<struct dent *> v;
@@ -44,6 +109,12 @@ void options_cb(struct dent *dent, struct dent *parent)
 	prev_dent->name = SYMBOL_DIRECTORY"  ..";
 	prev_dent->cb = root_cb;
 	v.push_back(prev_dent);
+
+	// Network config
+	auto net_dent = new struct dent();
+	net_dent->name = "Network Addresses";
+	net_dent->cb = netaddr_cb;
+	v.push_back(net_dent);
 
 	// Pulse audio
 	auto pa_dent = new struct dent();
