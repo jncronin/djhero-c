@@ -60,7 +60,7 @@ static struct gamedent *mame(std::string pretty, std::string mamename)
 {
     auto p = new struct gamedent();
     p->name = pretty;
-    p->cmdline = "FRAMEBUFFER=/dev/fb1 /usr/local/bin/advmame " + mamename;
+    p->cmdline = "FRAMEBUFFER=/dev/fb1 /usr/local/bin/advmame --quiet " + mamename;
     p->cb = game_cb;
     return p;
 }
@@ -84,6 +84,18 @@ std::vector<struct dent*> game_list()
 
     v.push_back(mame("1941"));
     v.push_back(mame("1942"));
+    v.push_back(mame("AfterBurner", "aburner"));
+    v.push_back(mame("Aliens", "aliens"));
+    v.push_back(mame("Contra", "contra"));
+    v.push_back(mame("Donkey Kong", "dkong"));
+    v.push_back(mame("Ice Climber", "iceclimb"));
+    v.push_back(mame("Jackal", "jackal"));
+    v.push_back(mame("Legend of Kage", "lkage"));
+    v.push_back(mame("Mario Brothers", "mario"));
+    v.push_back(mame("Sonic the Hedgehog", "mp_sonic"));
+    v.push_back(mame("Sonic the Hedgehog 2", "mp_soni2"));
+    v.push_back(mame("Paperboy", "paperboy"));
+    v.push_back(mame("Super Mario Brothers", "suprmrio"));
     v.push_back(mame("Pac-Man", "pacman"));
     v.push_back(mame("Ms. Pac-Man", "mspacman"));
     v.push_back(mame("Frogger", "frogger"));
