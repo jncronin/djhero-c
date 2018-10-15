@@ -2,6 +2,7 @@
 #include <iostream>
 #include "menuscreen.h"
 #include "music.h"
+#include "options.h"
 
 using namespace boost::filesystem;
 
@@ -9,7 +10,7 @@ std::vector<struct dent*> game_list();
 
 // LVGL screen objects
 static lv_obj_t *scr_list = NULL;
-static lv_obj_t *list = NULL;
+lv_obj_t *list = NULL;
 extern lv_group_t *list_grp;
 
 // Keyboard driver for associating with the group
@@ -144,7 +145,7 @@ std::vector<struct dent *> root_menu()
 
     auto opts_node = new struct dent();
     opts_node->name = SYMBOL_SETTINGS"  Options";
-    opts_node->cb = notimpl_cb;
+    opts_node->cb = options_cb;
 
     r.push_back(opts_node);
 

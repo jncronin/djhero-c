@@ -25,9 +25,10 @@ using namespace boost::filesystem;
 using std::cout;
 using std::endl;
 
-static void populate_list(lv_obj_t **l, path p);
-static const void *load_image(const char *fname);
 static bool kb_read(lv_indev_data_t *data);
+
+static lv_obj_t *scr_list;
+lv_group_t *list_grp;
 
 // Run a pigpio command
 static const char newl[] = "\n";
@@ -52,25 +53,13 @@ bool game_playing = false;
 // Is music playing?
 bool music_playing = false;
 
-// A screen containing only a list for scrolling up/down
-static lv_obj_t *scr_list;
-
 // Now playing screen
 lv_obj_t *scr_play;
 lv_obj_t *play_img;
 lv_obj_t *play_lab;
 
-// The list itself
-lv_obj_t *list = NULL;
-
-// A group for keyboard navigation
-lv_group_t *list_grp = NULL;
-
 // Keyboard driver
 lv_indev_t *kbd;
-
-// Current directory listing
-std::vector<struct dent*> dlist;
 
 // Data for evdev keyboard driver
 static uint32_t kb_last_key;
@@ -142,39 +131,6 @@ static const char * find_largest_jpg(path cp)
 		return cmax->c_str();
 	else
 		return NULL;
-}
-
-static lv_res_t list_cb(lv_obj_t *btn)
-{
-	auto dent = ((struct dent*)btn->free_ptr);
-	if(is_regular_file(dent->p))
-	{
-		// Find the largest *.jpg file in the folder
-		auto img_file = find_largest_jpg(dent->p.parent_path());
-		if(img_file == NULL)
-		{
-			lv_img_set_src(play_img, SYMBOL_AUDIO);
-		}
-		else
-		{
-			lv_img_set_src(play_img, load_image(img_file));
-		}
-
-		//lv_img_set_src(play_img, load_image("Folder.jpg"));
-		lv_label_set_text(play_lab, dent->p.filename().c_str());
-		
-		lv_scr_load(scr_play);
-		
-		cout << "Pressed " << ((struct dent*)btn->free_ptr)->p << endl;
-	
-		//exit(0);
-	}
-	else
-	{
-		//populate_list(&list, dent->p);
-	}
-
-	return LV_RES_OK;
 }
 
 void pulse_audio_ports()
@@ -320,47 +276,5 @@ static bool kb_read(lv_indev_data_t *data)
 	data->key = new_key;
 
 	return false;
-}
-
-static const void *load_image(const char *fname)
-{
-	// Test image load
-	auto f = fopen(fname, "r");
-	auto img = gdImageCreateFromJpegEx(f, 1);
-	fclose(f);
-
-	gdImageSetInterpolationMethod(img, GD_BILINEAR_FIXED);
-	auto scaled = gdImageScale(img, 240, 240);
-
-	gdImageDestroy(img);
-
-	auto imgbuf = new int16_t[240 * 240];
-	int ptr = 0;
-	for(int y = 0; y < 240; y++)
-	{
-		for(int x = 0; x < 240; x++)
-		{
-			// convert to rgb565
-			int rgb = scaled->tpixels[y][x];
-
-			int b = rgb & 0xff;
-			int g = (rgb >> 8) & 0xff;
-			int r = (rgb >> 16) & 0xff;
-
-			imgbuf[ptr++] = (int16_t)((b >> 3) | ((g >> 2) << 5) | ((r >> 3) << 11));
-		}
-	}
-
-	gdImageDestroy(scaled);
-
-	auto lvimg = new lv_img_t();
-	memset(lvimg, 0, sizeof(lv_img_t));
-	lvimg->header.format = LV_IMG_FORMAT_INTERNAL_RAW;
-	lvimg->header.w = 240;
-	lvimg->header.h = 240;
-	lvimg->header.alpha_byte = 0;
-	lvimg->pixel_map = (const uint8_t *)imgbuf;
-
-	return (const void *)lvimg;
 }
 
