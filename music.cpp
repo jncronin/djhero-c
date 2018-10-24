@@ -9,6 +9,8 @@
 #include <time.h>
 #include <string>
 #include <stdlib.h>
+#include <thread>
+#include <unistd.h>
 
 #include "music.h"
 #include "image.h"
@@ -46,6 +48,11 @@ static GstBus *bus = NULL;
 // playlist
 std::vector<std::string> cur_playlist;
 int cur_playlist_idx = 0;
+
+// thread that manages speed and volume pots
+// it is in a separate thread to allow the volume pot
+// to be used whilst games are playing
+std::thread *vol_thread;
 
 extern bool music_playing;  // is the music screen showing
 extern lv_indev_t *kbd;
@@ -152,6 +159,15 @@ static lv_res_t btn_cb(lv_obj_t *btnm, const char *txt)
     return LV_RES_OK;
 }
 
+static void speed_ctrl_thread()
+{
+	while(true)
+	{
+		speed_ctrl_loop();
+		usleep(5);
+	}
+}
+
 void music_init(int argc, char *argv[])
 {
     gst_init(&argc, &argv);
@@ -221,6 +237,9 @@ void music_init(int argc, char *argv[])
     lv_group_add_obj(btn_grp, btn_strip);
     lv_group_set_style_mod_cb(btn_grp, null_style);
     lv_btnm_set_action(btn_strip, btn_cb);
+
+    // start speed control thread running
+    vol_thread = new std::thread(speed_ctrl_thread);
 }
 
 void speed_ctrl_loop()
