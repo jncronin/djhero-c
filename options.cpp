@@ -122,6 +122,7 @@ void options_cb(struct dent *dent, struct dent *parent)
 	pa_dent->cb = pa_cb;
 	v.push_back(pa_dent);
 
+#if 0
 	// Volume controls
 	auto v0 = new struct dent();
 	v0->name = "Volume 0%";
@@ -147,6 +148,7 @@ void options_cb(struct dent *dent, struct dent *parent)
 	v100->name = "Volume 100%";
 	v100->cb = v100_cb;
 	v.push_back(v100);
+#endif
 
 	populate_list(&list, NULL, v);
 }

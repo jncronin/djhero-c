@@ -108,17 +108,17 @@ static uint32_t keycode_to_ascii(uint32_t ie_key)
 
 void pulse_audio_ports()
 {
-	gpio_cmd("w 2 0");
+	gpio_cmd("w 14 0");
 	usleep(20000);
-	gpio_cmd("w 2 1");
+	gpio_cmd("w 14 1");
 	usleep(20000);
-	gpio_cmd("w 3 0");
+	gpio_cmd("w 15 0");
 	usleep(20000);
-	gpio_cmd("w 3 1");
+	gpio_cmd("w 15 1");
 	usleep(20000);
-	gpio_cmd("w 2 0");
+	gpio_cmd("w 14 0");
 	usleep(20000);
-	gpio_cmd("w 2 1");
+	gpio_cmd("w 14 1");
 }
 
 int main(int argc, char *argv[])
@@ -136,10 +136,10 @@ int main(int argc, char *argv[])
 	send_serial('9');
 
 	// set up gpios - 22 is motor control active low
-	// 2 and 3 are amplifier reset ports
+	// 14 and 15 are amplifier reset ports
 	gpio_cmd("m 22 w");
-	gpio_cmd("m 2 w");
-	gpio_cmd("m 3 w");
+	gpio_cmd("m 14 w");
+	gpio_cmd("m 15 w");
 	gpio_cmd("w 22 1");
 	pulse_audio_ports();
 

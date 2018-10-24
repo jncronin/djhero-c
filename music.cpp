@@ -8,6 +8,7 @@
 #include <id3tag.h>
 #include <time.h>
 #include <string>
+#include <stdlib.h>
 
 #include "music.h"
 #include "image.h"
@@ -34,6 +35,7 @@ static lv_obj_t *old_scr = NULL;
 // mouse input - we sample the x value for our speed
 static struct libevdev *mdev = NULL;
 int last_x = 11; // centre
+int last_y = 5;
 static bool new_speed = false;
 extern bool new_ov_speed;
 
@@ -244,6 +246,21 @@ void speed_ctrl_loop()
                 std::cout << "new speed: " << last_x << std::endl;
             }
         }
+
+	if(ev.type == EV_REL && ev.code == REL_Y)
+	{
+		if(ev.value != last_y)
+		{
+			last_y = ev.value;
+			music_unhide();
+
+			std::cout << "new vol: " << last_y << std::endl;
+
+			system((std::string("/usr/bin/amixer sset Master playback ") +
+					std::to_string((last_y - 1) * 10) +
+					std::string("%")).c_str());
+		}
+	}			
     }
 
     if((clock() - last_speed_change) > CLOCKS_PER_SEC / 3)
