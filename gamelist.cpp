@@ -42,7 +42,9 @@ static void game_cb(struct dent *dent, struct dent *parent)
 
     send_serial('0');
     auto gd = (struct gamedent *)dent;
+#ifdef DEBUG
     std::cout << "game_cb: " << gd->cmdline << std::endl;
+#endif
     auto old_scr = lv_scr_act();
     auto new_scr = get_load_scr(gd->name);
     lv_scr_load(new_scr);
@@ -51,7 +53,9 @@ static void game_cb(struct dent *dent, struct dent *parent)
     game_playing = true;
     system(gd->cmdline.c_str());
     game_playing = false;
+#ifdef DEBUG
     std::cout << "game done" << std::endl;
+#endif
     lv_scr_load(old_scr);
     send_serial('9');
 }

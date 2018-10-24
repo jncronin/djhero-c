@@ -35,7 +35,9 @@ lv_obj_t *old_scr = NULL;
 
 static void show_overlay_image(int id)
 {
+#ifdef DEBUG
     std::cout << "Show image " << id << std::endl;
+#endif
     if(id >= 0)
     {
         // Only save the old screen if it
@@ -88,9 +90,13 @@ void overlay_loop()
 {
     if(new_ov_speed && ov_pipeline)
     {
+#ifdef DEBUG
         std::cout << "new_ov_speed" << std::endl;
-        set_speed(ov_pipeline, last_x);
-        std::cout << "new_ov_speed done" << std::endl;
+#endif
+	set_speed(ov_pipeline, last_x);
+#ifdef DEBUG
+	std::cout << "new_ov_speed done" << std::endl;
+#endif
     }
     // TODO handle events
 
@@ -133,10 +139,14 @@ void overlay_play(int id)
 {
     static int cur_id = -1;
 
+#ifdef DEBUG
     std::cout << "overlay_play" << std::endl;
+#endif
 
     gst_element_set_state(ov_pipeline, GST_STATE_NULL);
+#ifdef DEBUG
     std::cout << "setting uri" << std::endl;
+#endif
     g_object_set(ov_pipeline, "uri", ofiles[id], NULL);
     auto ret = gst_element_set_state(ov_pipeline, GST_STATE_PLAYING);
     if(ret == GST_STATE_CHANGE_FAILURE)
@@ -148,5 +158,7 @@ void overlay_play(int id)
 
     new_id = id;
 
+#ifdef DEBUG
     std::cout << "overlay_play done" << std::endl;
+#endif
 }

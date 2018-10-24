@@ -61,7 +61,9 @@ static const char * find_largest_jpg(path cp)
 
 void music_cb(struct dent *dent, struct dent *parent)
 {
+#ifdef DEBUG
     std::cout << "music_cb " << dent->p << std::endl;
+#endif
 
     // generate list of all mp3 files and note the index
     //  of the selected one
@@ -87,15 +89,19 @@ void root_cb(
 {
     (void)parent;
     (void)dent;
+#ifdef DEBUG
     std::cout << "root_cb" << std::endl;
+#endif
     populate_list(&list, NULL, root_menu());
 }
 
 void file_cb(struct dent *dent, struct dent *parent)
 {
     (void)parent;
+#ifdef DEBUG
     std::cout << "file_cb: ";
     std::cout << dent->p << std::endl;
+#endif
     populate_list(&list, dent, enum_dir(dent->p));
 }
 

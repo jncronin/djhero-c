@@ -80,8 +80,10 @@ static lv_res_t btn_cb(lv_obj_t *btnm, const char *txt)
 
     if(!strcmp(txt, SYMBOL_PAUSE))
     {
+#ifdef DEBUG
         std::cout << "Pause" << std::endl;
-        if(pipeline)
+#endif
+	if(pipeline)
         {
             gst_element_set_state(pipeline, GST_STATE_PAUSED);
 	    gpio_cmd("w 22 1");
@@ -91,8 +93,10 @@ static lv_res_t btn_cb(lv_obj_t *btnm, const char *txt)
     }
     else if(!strcmp(txt, SYMBOL_PLAY))
     {
+#ifdef DEBUG
         std::cout << "Play" << std::endl;
-        if(pipeline)
+#endif
+	if(pipeline)
         {
             gst_element_set_state(pipeline, GST_STATE_PLAYING);
             set_speed(pipeline, last_x);
@@ -103,8 +107,10 @@ static lv_res_t btn_cb(lv_obj_t *btnm, const char *txt)
     }
     else if(!strcmp(txt, SYMBOL_PREV))
     {
+#ifdef DEBUG
         std::cout << "Prev" << std::endl;
-        if(pipeline)
+#endif
+	if(pipeline)
         {
             --cur_playlist_idx;
             if(cur_playlist_idx < 0)
@@ -117,8 +123,10 @@ static lv_res_t btn_cb(lv_obj_t *btnm, const char *txt)
     }
     else if(!strcmp(txt, SYMBOL_NEXT))
     {
+#ifdef DEBUG
         std::cout << "Next" << std::endl;
-        if(pipeline && cur_playlist_idx < (cur_playlist.size() - 1))
+#endif
+	if(pipeline && cur_playlist_idx < (cur_playlist.size() - 1))
         {
             ++cur_playlist_idx;
             gst_element_set_state(pipeline, GST_STATE_NULL);
@@ -128,8 +136,10 @@ static lv_res_t btn_cb(lv_obj_t *btnm, const char *txt)
     }
     else if(!strcmp(txt, SYMBOL_EJECT))
     {
+#ifdef DEBUG
         std::cout << "Eject" << std::endl;
-        if(pipeline)
+#endif
+	if(pipeline)
             gst_element_set_state(pipeline, GST_STATE_NULL);
         music_playing = false;
 	gpio_cmd("w 22 1");
@@ -243,8 +253,10 @@ void speed_ctrl_loop()
                 lv_bar_set_value(speed_slider, last_x);
                 music_unhide();
 
-                std::cout << "new speed: " << last_x << std::endl;
-            }
+#ifdef DEBUG
+		std::cout << "new speed: " << last_x << std::endl;
+#endif
+	    }
         }
 
 	if(ev.type == EV_REL && ev.code == REL_Y)
@@ -254,7 +266,9 @@ void speed_ctrl_loop()
 			last_y = ev.value;
 			music_unhide();
 
+#ifdef DEBUG
 			std::cout << "new vol: " << last_y << std::endl;
+#endif
 
 			system((std::string("/usr/bin/amixer sset Master playback ") +
 					std::to_string((last_y - 1) * 10) +
@@ -342,7 +356,9 @@ void set_speed(GstElement *pline, int intspeed)
 
     gint64 position;
 
+#ifdef DEBUG
     std::cout << "set_speed" << std::endl;
+#endif
     GstState st;
     gst_element_get_state(pline, &st, NULL, 200000000);
     if(st != GST_STATE_PLAYING)
@@ -358,7 +374,9 @@ void set_speed(GstElement *pline, int intspeed)
             GST_SEEK_TYPE_SET, position, GST_SEEK_TYPE_NONE, 0);
         gst_element_send_event(pline, seek_event);
     }
+#ifdef DEBUG
     std::cout << "set_speed done" << std::endl;
+#endif
 }
 
 void play_music_list(std::vector<std::string> fnames,

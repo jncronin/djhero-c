@@ -228,7 +228,9 @@ static bool kb_read(lv_indev_data_t *data)
 		if(new_key != 'r' && new_key != 'g' && new_key != 'b')
 		{
 			music_unhide();
+#ifdef DEBUG
 			printf("unhiding due to state %u and key %u\n", kb_state, new_key);
+#endif
 		}
 		last_state = kb_state;
 		last_key = new_key;
