@@ -79,7 +79,7 @@ static void netaddr_cb(struct dent *dent, struct dent *parent)
 				case AF_INET6:
 					{
 						char addr[INET6_ADDRSTRLEN+1];
-						inet_ntop(AF_INET6, &((struct sockaddr_in *)cif->ifa_addr)->sin_addr,
+						inet_ntop(AF_INET6, &((struct sockaddr_in6 *)cif->ifa_addr)->sin6_addr,
 								addr, INET6_ADDRSTRLEN);
 						
 						auto ad_dent = new struct dent();
