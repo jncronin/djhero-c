@@ -3,6 +3,10 @@ OBJFILES := $(patsubst %.cpp, %.o, $(SOURCES))
 
 all: djhero
 
+.PHONY: clean
+
+clean:
+	rm -rf $(OBJFILES) djhero
 
 %.o: %.cpp
 	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) -g `pkg-config --cflags gstreamer-1.0` -I ../lv -o $@ $<
